@@ -1,0 +1,66 @@
+﻿Type Safe LLM
+Architecture spike design | Gemini | Azure
+Recommendation
+Build a Gemini wrapper library as the core typed interface. Add an MCP adapter if the team proves that MCP clients need to discover and call the validator. Treat this as a working decision until the spikes are measured.
+What the system promises
+A consumer supplies a schema and receives either a validated object of that type or a clear error. Gemini can produce schema shaped JSON, but a string that looks like JSON is not yet a safe object. Runtime validation checks syntax, fields, value types and domain constraints.
+Example: an Event has a title as text, a valid start timestamp and a nonnegative attendee count. A response with attendee count as text must fail validation. Validation cannot establish whether the event details are factually true.
+Shared success criteria
+* One declared schema per request and no parsing code in consumer applications.
+* Explicit errors for invalid content, empty responses, timeouts and provider failures.
+* Tests for nested objects, arrays, enums, optional values and domain rules.
+* Defined retry limits, secure credentials and comparable latency and cost measurements.
+Approach 1 | Gemini wrapper library
+Application calls a typed library method with a schema. The library requests structured output from Gemini, parses and validates it, then returns a native object or typed error. An optional Azure web API can expose the library to other clients.
+Advantages
+* Direct typed return for application developers.
+* Parsing, validation and error handling live in one place.
+* Straightforward unit tests with mocked Gemini responses.
+* The core library can later support a web API and an MCP adapter.
+Costs and risks
+* Other languages may require separate SDKs or generated clients.
+* Gemini supports only a subset of possible schema features, so schema translation needs testing.
+* Public API, schema changes and runtime validation rules need versioning.
+* A hosted API introduces authentication and deployment work.
+Approach 2 | MCP validation server
+An MCP client discovers a validation tool and supplies content and a named schema. The server checks and normalizes the content, then returns a structured tool result. A host must require validation and check the final result when an application needs a guaranteed typed object.
+Advantages
+* The capability is reusable by compatible agent clients.
+* Tools and their input descriptions are discoverable through MCP.
+* The server can reuse the same validation core as the wrapper.
+Costs and risks
+* MCP provides tool integration, not an automatic type guarantee.
+* A model may omit or misuse a tool unless the host enforces its use.
+* Transport, client compatibility, access control and observability add work.
+* The Microsoft quickstart demonstrates local stdio; remote Azure hosting needs separate design.
+Direct comparison
+Typed result
+Library: returns a native validated object or typed error. MCP: returns a tool result that the host must check before treating it as a typed object.
+Who controls validation
+Library: the application always executes validation. MCP: the host must invoke the tool and reject any unchecked final response.
+Best fit
+Library: developers embedding typed Gemini calls in applications. MCP: agent hosts that need a discoverable validation capability. Both can share one validator.
+Deployment and complexity
+The library can run locally or behind an Azure API. The MCP server can run locally or use a supported remote transport. MCP adds protocol and host integration work to the same core parsing problem.
+Platform choices
+Gemini
+Pros: schema shaped output, SDK schema support and fast experimentation with one model provider.
+Cons: supported schema subset, possible unusable responses, API latency and usage cost. Validate every response in code. Confirm behavior with the selected model and either the Gemini Developer API or Vertex AI.
+Azure
+Pros: managed hosting, scaling and server environment for credentials.
+Cons: hosting configuration and cost, plus outbound traffic to Google's model endpoint. Measure latency and assess data handling across providers. Choose App Service or Container Apps once the workload and remote transport needs are known.
+Boundary: Azure hosts project code while Gemini serves generation. Azure hosting alone does not provide Gemini or guarantee valid output.
+Spike plan
+1. Define one representative schema with nesting, enums, optional fields and a constrained number. Specify success and error types.
+2. Prototype the wrapper. Test valid, malformed, missing, incorrect type, invalid domain, empty and timeout cases with mocks and a small live sample.
+3. Expose the validator through MCP. Connect a real client, inspect tool use and confirm whether the host rejects unchecked responses.
+4. For identical inputs, compare validated success, error classification, median and 95th percentile latency, integration effort and estimated token and hosting cost.
+Decision rule
+Choose the library as the core when consumers need a guaranteed typed return in application code. Add MCP when a concrete MCP client use case is demonstrated and its host enforces validation. Revisit this choice if Gemini cannot support required schemas or agent integration becomes the primary need.
+Open decisions and sources
+The team has selected Gemini and Azure. Implementation language, exact Gemini API route, target clients, schemas, traffic and budget remain to be decided. The spikes should verify provider behavior and operating costs.
+Google Cloud | Structured output: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output
+Google AI for Developers | Structured outputs: https://ai.google.dev/gemini-api/docs/structured-output
+Microsoft Learn | Minimal MCP server: https://learn.microsoft.com/en-us/dotnet/ai/quickstarts/build-mcp-server
+Microsoft Learn | Azure hosting: https://learn.microsoft.com/en-us/azure/developer/intro/hosting-apps-on-azure
+Microsoft Learn | App Service plans: https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans

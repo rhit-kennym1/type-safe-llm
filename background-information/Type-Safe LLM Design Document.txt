@@ -1,0 +1,81 @@
+﻿Problem Statement
+Organizations increasingly use LLMs to extract structured information from unstructured data. One motivating use case is contract processing, where specific clauses and terms need to be identified and passed into existing software systems. Because customers may modify, reject, or negotiate standard clauses, contracts cannot always be processed using simple predefined rules.
+LLMs can make this extraction more flexible, but their responses are generally returned as text. Developers must then parse that output and convert it into the structured types expected by their applications. Differences in formatting, missing or incorrect fields, and unexpected LLM responses can lead to parsing failures and unsafe type conversions. Developers may also need to repeatedly implement similar parsing and validation logic for different applications and output formats.
+This project aims to create a reusable type-safe library around LLM interactions that handles structured output generation, parsing, and validation. The library should allow developers to define the type of data they expect and receive a validated object that can be safely passed to downstream systems, reducing the amount of application-specific parsing code and making LLM integration more reliable.
+
+
+
+
+End of Winter, features:
+
+
+1. Schema definition for expected output
+A mechanism for specifying the expected structure of a response, meaning field names, types, and format (JSON, XML, YAML, or CSV), before the LLM is called. This schema is what everything downstream validates against.
+
+
+2. Validation layer
+The core piece. After the LLM responds, its output is parsed and checked against the schema. Valid output passes through; invalid output is flagged rather than silently returned to the caller. This is the actual "type safety" the project delivers.
+
+
+3. Retry/reprompt loop
+When validation fails, the system re-prompts the LLM with information about what was wrong, instead of just erroring out. This closes the loop. It's the difference between detecting bad output and actually recovering from it
+
+
+4. Multi-format coverage
+JSON first, since it's the format LLMs handle most reliably, followed by XML, YAML, and CSV. Each format has different parsing and validation requirements, so this isn't just swapping the serializer. Reliability tends to drop as you move down that list.
+
+
+5. End-to-end integration
+Working against a real model on real infrastructure, not just validated locally against sample outputs.
+
+
+6. Comparative evaluation of both approaches
+Compare the wrapper-library and MCP-server approaches using validation success rate, recovery success rate after retries, latency, token/cost overhead, integration complexity, extensibility, and developer usability.
+
+
+7. Developer documentation
+Enough to onboard an external user without direct guidance. A working example per supported format is a reasonable minimum bar.
+
+
+________________
+
+
+Extra: -
+8. Provider abstraction layer
+A common interface for interacting with different LLM providers so that the validation and retry logic is not tied to one specific model or API. Even if only one provider is fully implemented by the end of Winter, the architecture should make adding another provider straightforward.
+
+
+9. Configurable failure and retry behavior
+Allow the developer to configure things such as maximum retry attempts, what happens after all retries fail, and whether invalid output should throw an error or return a structured failure result. This makes the system usable in applications with different reliability requirements.
+
+
+10. Detailed error reporting
+When validation fails, provide useful information about what went wrong—for example, a missing field, incorrect type, malformed JSON, or invalid schema—rather than simply returning "validation failed." This is important both for the retry mechanism and for developer debugging.
+
+
+11. Automated testing suite
+A comprehensive set of unit and integration tests covering valid responses, malformed responses, incorrect types, missing fields, nested structures, retries, and each supported output format. Tests against mocked responses should be deterministic, while a smaller integration suite can test real LLM behavior.
+
+
+12. Complex/nested type support
+Support more than simple flat objects. The system should be able to validate structures containing nested objects, lists/arrays, optional fields, enums, and similar commonly used application types.
+
+
+13. Observability and logging
+Provide logging around LLM requests, validation failures, retry attempts, and final outcomes. This should make it possible to understand why a request failed and evaluate how reliably the system is performing without exposing sensitive information unnecessarily.
+
+
+14. Configuration/API usability
+Provide a clear developer-facing API for specifying schemas, choosing formats/models, and configuring system behavior. By the end of Winter, someone should be able to integrate the system without needing to understand its internal parsing and validation implementation.
+
+
+15. Full XML/YAML/CSV reliability testing
+
+
+* As a software engineer, I want to receive structured output from my LLM so that I can use it in a software project.
+* As a software engineer, I want the system to detect when the LLM’s output does not match my expected structure and automatically attempt to fix it, so that I get a usable, correctly formatted result instead of having to catch the error and retry myself.
+* As a software engineer, I want to add this system to my existing projects with minimal setup to ensure good simplicity and ease of use.
+* As a software engineer, I want the system to be thoroughly documented to allow any technical expert to gain familiarity with it easily.
+* As a technical lead, I want the system to provide clear validation and error information, so that my team can diagnose failures quickly and maintain reliable LLM integrations.
+* As a system architect, I want the library to work across different LLM providers so that applications are not tightly coupled to a single vendor.
+* As a platform engineer, I want the system to be easy to integrate into existing applications and services so that multiple teams can adopt it without significant changes to their current infrastructure.
