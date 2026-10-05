@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "type-safe-llm": {
+      "command": "C:/absolute/path/to/type-safe-llm/.venv/Scripts/python.exe",
+      "args": ["-m", "type_safe_llm.server"]
+    }
+  }
+}
