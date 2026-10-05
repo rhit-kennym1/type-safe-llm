@@ -1,0 +1,299 @@
+/* Demo styling on top of Pico CSS. Pico handles base elements; this file sets the palette and layout. */
+
+/* Matches Pico's own light-theme selector so these overrides win. */
+:root, :root[data-theme="light"] {
+  --ink: #17213a;
+  --paper: #eef1f5;
+  --panel: #ffffff;
+  --line: #d5dbe5;
+  --muted: #5a6478;
+  --accent: #2b55c9;
+  --valid: #1c7a4e;
+  --valid-tint: #e6f2ec;
+  --invalid: #b42318;
+  --invalid-tint: #fbeceb;
+
+  --pico-font-family-sans-serif: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --pico-font-family-monospace: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --pico-font-size: 100%;
+  --pico-line-height: 1.5;
+  --pico-background-color: var(--paper);
+  --pico-color: var(--ink);
+  --pico-muted-color: var(--muted);
+  --pico-primary: var(--accent);
+  --pico-primary-background: var(--accent);
+  --pico-primary-border: var(--accent);
+  --pico-primary-hover-background: #2146a8;
+  --pico-primary-hover-border: #2146a8;
+  --pico-primary-focus: rgba(43, 85, 201, 0.35);
+  --pico-code-background-color: #f5f7fa;
+  --pico-code-color: var(--ink);
+}
+
+body {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+h1, h2 { color: var(--ink); }
+
+h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- masthead and mode tabs ---------- */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.masthead h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.modes {
+  display: inline-flex;
+  padding: 0.2rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.modes button {
+  margin: 0;
+  padding: 0.4rem 1rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.modes button[aria-selected="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ---------- layout ---------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (max-width: 54rem) {
+  .layout { grid-template-columns: 1fr; }
+  .masthead { flex-wrap: wrap; }
+}
+
+/* ---------- controls ---------- */
+
+.controls {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.6rem;
+  row-gap: 0.15rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.option:has(input:checked) { border-color: var(--accent); }
+.option input { margin: 0.2rem 0 0; }
+.option-title { font-weight: 500; }
+.option small { grid-column: 2; color: var(--muted); line-height: 1.4; }
+
+.hint { font-size: 0.85rem; color: var(--muted); }
+
+#run-button { width: 100%; }
+
+/* ---------- the four steps ---------- */
+
+.step + .step { margin-top: 2.25rem; }
+
+.step h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.step-number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.message {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+  font-size: 1.15rem;
+}
+
+#message-input { font-size: 1.05rem; margin: 0; }
+
+.fields {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  margin-bottom: 0.75rem;
+}
+
+.fields th, .fields td { padding: 0.55rem 0.9rem; }
+.fields code { background: none; padding: 0; color: var(--accent); }
+
+.code summary { font-size: 0.95rem; color: var(--muted); }
+.code p { margin: 0.9rem 0 0.35rem; font-size: 0.9rem; color: var(--muted); }
+.code pre { margin: 0; max-height: 22rem; overflow: auto; }
+
+/* ---------- answers ---------- */
+
+.empty { color: var(--muted); }
+
+.attempts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.attempt {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 4px;
+  padding: 0.9rem 1rem;
+  list-style: none;
+  animation: arrive 220ms ease-out;
+}
+
+/* Connector: each try answers the problem found in the one before it. */
+.attempt + .attempt { margin-top: 1.25rem; }
+.attempt + .attempt::before {
+  content: "";
+  position: absolute;
+  left: 1.25rem;
+  top: calc(-1.25rem - 1px);
+  height: 1.25rem;
+  border-left: 2px dashed var(--line);
+}
+
+.attempt.rejected { border-left-color: var(--invalid); }
+.attempt.accepted { border-left-color: var(--valid); }
+
+.attempt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+
+.attempt-number { font-weight: 500; }
+.verdict { font-weight: 600; font-size: 0.95rem; }
+.rejected .verdict { color: var(--invalid); }
+.accepted .verdict { color: var(--valid); }
+
+.attempt-problem {
+  margin: 0 0 0.6rem;
+  color: var(--invalid);
+  font-weight: 500;
+}
+
+.attempt-output {
+  margin: 0;
+  max-height: 14rem;
+  overflow: auto;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.attempt-error { margin: 0.6rem 0 0; }
+.attempt-error summary { font-size: 0.85rem; color: var(--muted); }
+.attempt-error pre {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  background: var(--invalid-tint);
+  color: var(--invalid);
+}
+
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attempt { animation: none; }
+}
+
+/* ---------- result ---------- */
+
+.result:empty { display: none; }
+
+.result {
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.result.success { border-color: var(--valid); background: var(--valid-tint); }
+.result.failure { border-color: var(--invalid); background: var(--invalid-tint); }
+
+.result-title { font-weight: 600; margin-bottom: 0.75rem; }
+.success .result-title { color: var(--valid); }
+.failure .result-title { color: var(--invalid); }
+.result p:last-child { margin-bottom: 0; }
+
+.result dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1.5rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.result dt { font-family: var(--pico-font-family-monospace); font-size: 0.85rem; color: var(--muted); align-self: center; }
+.result dd { margin: 0; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.tags li {
+  margin: 0;
+  padding: 0.1rem 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  list-style: none;
+}
+
+.muted { color: var(--muted); }
