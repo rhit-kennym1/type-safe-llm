@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>typed-llm demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="vendor/pico.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <h1>typed-llm</h1>
+    <div class="modes" role="tablist" aria-label="Demo mode">
+      <button type="button" role="tab" id="tab-examples" data-mode="examples" aria-selected="true">Examples</button>
+      <button type="button" role="tab" id="tab-live" data-mode="live" aria-selected="false">Live model</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="controls">
+      <div id="examples-controls">
+        <h2>Pick an example</h2>
+        <fieldset id="scenario-list"></fieldset>
+      </div>
+      <div id="live-controls" hidden>
+        <h2>How the fields are sent</h2>
+        <fieldset id="live-model-list"></fieldset>
+        <p class="hint">Runs on this computer with Ollama. Free, and no account needed.</p>
+      </div>
+      <button id="run-button" type="button" disabled>Run</button>
+    </aside>
+
+    <div class="flow">
+      <section class="step" aria-labelledby="step-message">
+        <h2 id="step-message"><span class="step-number">1</span>Message</h2>
+        <blockquote id="message-view" class="message"></blockquote>
+        <textarea id="message-input" rows="3" hidden aria-label="Message to send to the model"></textarea>
+      </section>
+
+      <section class="step" aria-labelledby="step-fields">
+        <h2 id="step-fields"><span class="step-number">2</span>Fields we asked for</h2>
+        <table class="fields">
+          <thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead>
+          <tbody id="field-rows"></tbody>
+        </table>
+        <details class="code">
+          <summary>Show code</summary>
+          <p>The Kotlin type a developer writes</p>
+          <pre><code id="target-source"></code></pre>
+          <p>The JSON Schema the library generates from it</p>
+          <pre><code id="target-schema"></code></pre>
+        </details>
+      </section>
+
+      <section class="step" aria-labelledby="step-answers">
+        <h2 id="step-answers"><span class="step-number">3</span>Answers from the model</h2>
+        <p id="answers-empty" class="empty">Press Run to see each answer checked against the fields.</p>
+        <ol id="attempts" class="attempts"></ol>
+      </section>
+
+      <section class="step" aria-labelledby="step-result" aria-live="polite">
+        <h2 id="step-result"><span class="step-number">4</span>Result</h2>
+        <div id="result" class="result"></div>
+      </section>
+    </div>
+  </main>
+
+  <template id="attempt-template">
+    <li class="attempt">
+      <div class="attempt-head">
+        <span class="attempt-number"></span>
+        <span class="verdict"></span>
+      </div>
+      <p class="attempt-problem"></p>
+      <pre class="attempt-output"></pre>
+      <details class="attempt-error">
+        <summary>Exact error</summary>
+        <pre></pre>
+      </details>
+    </li>
+  </template>
+</body>
+</html>
