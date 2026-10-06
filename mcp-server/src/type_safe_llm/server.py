@@ -3,6 +3,7 @@
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.prompts.base import UserMessage
 from pydantic import BaseModel, Field
 
 from .core import RetryResult, ValidationResult, extraction_prompt, generate_validated, validate_json
@@ -79,12 +80,19 @@ def demo_guide() -> str:
 
 
 @mcp.prompt()
-def extract_typed_json(schema_name: SchemaName, source: str) -> str:
-    """Prepare a schema-aware extraction prompt for the host's model."""
-    return extraction_prompt(schema_name, source) + (
-        "\nBefore using the extracted object, call validate_output with this schema "
-        "and your JSON. If ok=false, repair it using the errors and validate again."
-    )
+def extract_typed_json(schema_name: SchemaName, source: str) -> list[UserMessage]:
+    """Prepare a schema-aware extraction prompt for the host's model.
+
+    Message 1 is the extraction task. Message 2 tells a tool-calling host to validate;
+    a host without tool access should send only message 1.
+    """
+    return [
+        UserMessage(extraction_prompt(schema_name, source)),
+        UserMessage(
+            "Before using the extracted object, call validate_output with this schema "
+            "and your JSON. If ok=false, repair it using the errors and validate again."
+        ),
+    ]
 
 
 def main() -> None:

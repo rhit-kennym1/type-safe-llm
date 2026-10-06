@@ -52,9 +52,18 @@ def extraction_prompt(schema_name: str, source: str) -> str:
     )
 
 
+def repair_prompt(original_prompt: str, previous: str, errors: list[Issue]) -> str:
+    return (
+        f"{original_prompt}\nPREVIOUS RESPONSE:\n{previous}\n"
+        f"VALIDATION ERRORS:\n{json.dumps([e.model_dump() for e in errors])}\n"
+        "Correct these errors and return only the complete JSON object."
+    )
+
+
 class Attempt(BaseModel):
     number: int
     result: ValidationResult
+    content: str | None = None  # the raw model response that was validated
     repair_prompt: str | None = None
 
 
@@ -88,17 +97,13 @@ def generate_validated(
                                status="provider_error", attempts=attempts,
                                error="Provider failed to return text; check provider logs.")
         result = validate_json(schema_name, content)
-        attempt = Attempt(number=number, result=result)
+        attempt = Attempt(number=number, result=result, content=content)
         attempts.append(attempt)
         if result.ok:
             return RetryResult(ok=True, schema_name=schema_name, provider=provider,
                                status="validated", data=result.data, attempts=attempts)
         if number <= max_retries:
-            prompt = (
-                f"{original_prompt}\nPREVIOUS RESPONSE:\n{content}\n"
-                f"VALIDATION ERRORS:\n{json.dumps([e.model_dump() for e in result.errors])}\n"
-                "Correct these errors and return only the complete JSON object."
-            )
+            prompt = repair_prompt(original_prompt, content, result.errors)
             attempt.repair_prompt = prompt
     return RetryResult(ok=False, schema_name=schema_name, provider=provider,
                        status="retries_exhausted", attempts=attempts)
