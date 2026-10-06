@@ -1,0 +1,60 @@
+# CI workflow for the Kotlin type-safe LLM library.
+#
+# What it does:
+#   On every push to main and every pull request, GitHub spins up a fresh
+#   Ubuntu machine, installs JDK 21, and runs `./gradlew build` inside the
+#   kotlin-library folder. `build` compiles the code and runs every test.
+#   If anything fails, the run is marked red and the PR shows a failing check.
+#   Test reports are uploaded as a downloadable artifact either way, so you can
+#   see exactly which test failed without rerunning locally.
+#
+# Why it matters:
+#   It proves the code builds and passes tests on a clean machine, not just on
+#   one person's laptop, and (with branch protection) blocks broken code from
+#   being merged into main.
+
+name: CI
+
+on:
+  push:
+    branches: [main]      # run on every push to main
+  pull_request:           # run on every PR, whatever branch it targets
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # All `run:` steps execute inside kotlin-library, since the Gradle project
+    # lives there rather than at the repo root.
+    defaults:
+      run:
+        working-directory: kotlin-library
+
+    steps:
+      # Download the repository's code onto the runner.
+      - uses: actions/checkout@v4
+
+      # Install JDK 21 (Eclipse Temurin, the same build you use locally).
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Set up Gradle and cache downloaded dependencies between runs,
+      # so later builds are much faster.
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Compile everything and run all tests. Any failure fails the workflow.
+      - name: Build and test
+        run: ./gradlew build
+
+      # Upload the HTML test report, even if the build failed (if: always()),
+      # so it can be downloaded from the run's summary page on GitHub.
+      # The path is relative to the repo root because working-directory
+      # only applies to `run:` steps, not `uses:` steps.
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: kotlin-library/*/build/reports/tests/
