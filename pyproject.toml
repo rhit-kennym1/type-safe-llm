@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "type-safe-llm-demo"
+version = "0.1.0"
+description = "A local MCP demo for strict LLM output validation and retry recovery"
+requires-python = ">=3.11"
+dependencies = ["mcp>=1.28,<2", "pydantic>=2.11,<3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+type-safe-llm-server = "type_safe_llm.server:main"
+type-safe-llm-demo = "type_safe_llm.demo:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
