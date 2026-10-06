@@ -5,6 +5,17 @@ workflow. No API key is needed. The retry demo uses **simulated model responses*
 `validate_output` can validate JSON from any actual model. The validation core is
 independent of MCP so a wrapper library can reuse it.
 
+## View the report without installing anything
+
+A saved presentation report is included at [docs/demo-report.html](docs/demo-report.html).
+On GitHub, open that file and use **Download raw file**, then open the downloaded
+HTML file in Chrome, Edge, Firefox, or Safari. GitHub's file view displays the source;
+the downloaded file displays the interactive report.
+
+All five tabs, navigation buttons, and expandable details work offline. No Python,
+server, API key, or extra files are needed. This is a snapshot of a completed demo
+with simulated model responses; it does not rerun validation or call an LLM.
+
 ## Run the demo (PowerShell)
 
 Requires Python 3.11 or newer. From this repository:
