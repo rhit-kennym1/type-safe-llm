@@ -15,9 +15,13 @@ dev = ["pytest>=8,<10"]
 [project.scripts]
 type-safe-llm-server = "type_safe_llm.server:main"
 type-safe-llm-demo = "type_safe_llm.demo:main"
+type-safe-llm-web = "type_safe_llm.web:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+type_safe_llm = ["static/*", "static/vendor/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

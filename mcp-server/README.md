@@ -47,6 +47,70 @@ to export all five examples. Server and client stop after the report is generate
 .\.venv\Scripts\python.exe -m type_safe_llm.demo --terminal
 ```
 
+## Web UI (like the Kotlin demo)
+
+```powershell
+.\.venv\Scripts\python.exe -m type_safe_llm.web
+```
+
+Opens http://localhost:8765 (`--port` to change, `--no-open` to skip the browser). Standard
+library only. Two tabs, with the same four-step flow as the Kotlin demo (source text, fields,
+what happened, result):
+
+- **Examples**: simulated model answers (wrong type, missing field, broken JSON, retries
+  exhausted, ...) validated through a real MCP stdio session.
+- **Live model**: your configured model (`.env`). Choose **who validates**: *the program*
+  (it calls `validate_output` after every answer and re-prompts) or *the model* (it decides
+  whether to call the tool; the result shows whether it did, and the program still checks the
+  final answer). You can edit the source text and pick `event` or `contract`.
+
+Safety: binds to `127.0.0.1` only, checks the `Host` header, requires JSON `Content-Type` on
+POSTs, serves only a fixed list of static files, and never sends the API key to the browser.
+Each run starts its own MCP server subprocess, so a run takes a second or two plus model time.
+
+## Run with a real model (Ollama, free and local)
+
+1. Install Ollama from https://ollama.com and start it.
+2. Download the default model once: `ollama pull llama3.2:3b`
+3. From `mcp-server`:
+
+```powershell
+.\.venv\Scripts\python.exe -m type_safe_llm.live --schema event
+.\.venv\Scripts\python.exe -m type_safe_llm.live --schema contract --max-retries 3
+```
+
+Here the **host drives the loop**: it fetches the `extract_typed_json` prompt from the
+server, sends it to the model, calls `validate_output` over a real MCP stdio session,
+and re-prompts with the errors on failure. This differs from `run_retry_demo`, which
+simulates the model on the server side. Small models often fail strict JSON; that is a
+legitimate result and is reported, not hidden.
+
+Any OpenAI-compatible endpoint works by setting `LIVE_BASE_URL`, `LIVE_API_KEY` and
+`LIVE_MODEL` (these are the same variables the Kotlin demo uses). Live tests are skipped
+by default; run them with `$env:TYPED_LLM_LIVE = "1"` then `pytest tests/test_live.py -s`.
+
+### Tool-calling mode and other providers
+
+```powershell
+.\.venv\Scripts\python.exe -m type_safe_llm.live --schema event --tool-calling
+```
+
+Here the **model** decides whether to call `validate_output` (the server's tools are sent
+to it in the OpenAI `tools` format). The host still validates the final text itself, and
+the output reports whether the model ever called the validator. Needs a tool-capable model.
+
+| Backend | `LIVE_BASE_URL` | `LIVE_API_KEY` | `LIVE_MODEL` |
+| --- | --- | --- | --- |
+| Ollama (default) | `http://localhost:11434/v1` | any | `llama3.2:3b` |
+| Gemini free tier | `https://generativelanguage.googleapis.com/v1beta/openai` | Google AI Studio key | `gemini-3.1-flash-lite` |
+| OpenAI (paid) | `https://api.openai.com/v1` | your key | e.g. `gpt-4o-mini` |
+
+Put these in `mcp-server/.env` (copy [.env.example](.env.example)); the file is gitignored and
+loaded automatically. Variables already set in your shell take priority. Rate limits (HTTP 429) are
+retried twice. Gemini and Ollama have been run; the OpenAI row is untested. Google retires
+models for new accounts and gets overloaded (HTTP 503) often; if a model 404s or 503s, list
+what your key can use with a GET to `<LIVE_BASE_URL>/models` and pick another.
+
 ## Connect an MCP host
 
 Use [examples/mcp-config.json](examples/mcp-config.json) in a host that accepts the
