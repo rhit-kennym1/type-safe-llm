@@ -113,6 +113,23 @@ what your key can use with a GET to `<LIVE_BASE_URL>/models` and pick another.
 
 ## Connect an MCP host
 
+## Use the browser chat demo
+
+The local web bridge launches the real MCP stdio server for each request and provides a chat-style UI for schema discovery, strict validation, and retry demonstrations. Start it from `mcp-server`:
+
+```powershell
+.\.venv\Scripts\python.exe -m type_safe_llm.web_app
+```
+
+Open `http://127.0.0.1:8765`. Try questions such as:
+
+- `What schemas can you validate?`
+- `Validate the event example`
+- `Show me a wrong-type retry demo`
+- `Show me an exhausted contract retry`
+
+This is a local demonstration: the current MCP server uses simulated responses and does not answer arbitrary knowledge questions without a live LLM provider.
+
 Use [examples/mcp-config.json](examples/mcp-config.json) in a host that accepts the
 `mcpServers` configuration format. Replace the command with the **absolute path**
 to this repository's virtual environment Python. Editable installation above makes

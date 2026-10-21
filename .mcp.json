@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "type-safe-llm-demo": {
+      "type": "stdio",
+      "command": "C:\\Users\\rameshr\\Desktop\\Senior Capstone\\type-safe-llm\\.venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\Users\\rameshr\\Desktop\\Senior Capstone\\type-safe-llm\\demo_mcp_server.py"
+      ]
+    }
+  }
+}

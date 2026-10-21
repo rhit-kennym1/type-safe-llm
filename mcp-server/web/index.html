@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type-Safe LLM · MCP Console</title>
+  <style>
+    :root { --ink:#172b3a; --muted:#657887; --line:#d9e4e8; --mint:#1a8b72; --mint-dark:#10644f; --paper:#f5f8f7; --card:#fff; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    header { background:#132c40; color:#fff; padding:36px 24px 34px; border-bottom:5px solid #61d2b7; }
+    .wrap { max-width:940px; margin:auto; } .eyebrow { margin:0 0 8px; color:#8bdcc8; font-size:12px; font-weight:800; letter-spacing:1.6px; text-transform:uppercase; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,5vw,48px); letter-spacing:-1.5px; } header p:last-child { margin:0; color:#c5d5df; max-width:650px; }
+    main { padding:28px 20px 46px; } .status { color:var(--muted); font-size:13px; margin-bottom:16px; }
+    .chat { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 14px 36px #132c4010; overflow:hidden; }
+    .messages { min-height:390px; max-height:58vh; overflow:auto; padding:22px; display:grid; align-content:start; gap:16px; }
+    .message { max-width:82%; padding:14px 16px; border-radius:13px; } .message p { margin:0 0 10px; } .message p:last-child { margin-bottom:0; }
+    .assistant { background:#edf8f4; border:1px solid #cbe9df; } .user { margin-left:auto; background:#18364c; color:#fff; }
+    .label { margin:0 0 5px; font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; opacity:.68; }
+    .composer { border-top:1px solid var(--line); padding:15px; display:flex; gap:10px; } textarea { flex:1; resize:none; min-height:48px; border:1px solid var(--line); border-radius:10px; padding:12px; font:inherit; color:var(--ink); } button { border:0; border-radius:9px; padding:0 20px; background:var(--mint); color:#fff; cursor:pointer; font:700 14px system-ui; } button:hover { background:var(--mint-dark); } button:disabled { opacity:.55; cursor:wait; }
+    .suggestions { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; } .suggestions button { background:#e7f2ef; color:var(--mint-dark); padding:9px 12px; font-weight:650; }
+    pre { max-height:260px; overflow:auto; background:#132c40; color:#dcf3ed; padding:14px; border-radius:9px; font:12px/1.55 ui-monospace,Consolas,monospace; white-space:pre-wrap; } .result-badge { display:inline-block; margin-bottom:7px; padding:3px 8px; border-radius:999px; font-size:12px; font-weight:800; } .pass { background:#d8f2e7; color:#116b55; } .fail { background:#ffe2e5; color:#a32e3c; }
+    .footnote { color:var(--muted); font-size:13px; margin:16px 2px 0; } @media(max-width:620px){ .composer{display:block}.composer button{width:100%;height:44px;margin-top:9px}.message{max-width:94%} }
+  </style>
+</head>
+<body>
+  <header><div class="wrap"><p class="eyebrow">Senior capstone · local MCP prototype</p><h1>Ask the Type-Safe LLM</h1><p>Explore how an MCP server discovers schemas, rejects unsafe data, and repairs invalid model output without returning an unvalidated object.</p></div></header>
+  <main class="wrap">
+    <div class="status" id="status">Connecting to the local MCP bridge…</div>
+    <section class="chat" aria-label="MCP chat console">
+      <div class="messages" id="messages"></div>
+      <form class="composer" id="form"><textarea id="question" aria-label="Your question" placeholder="Ask about schemas, validation, or retries…" rows="2"></textarea><button id="send" type="submit">Ask MCP</button></form>
+    </section>
+    <div class="suggestions" id="suggestions"></div>
+    <p class="footnote">This local demo uses simulated responses. It does not call a live LLM; it demonstrates the MCP validation boundary and makes failures visible.</p>
+  </main>
+  <script>
+    const messages = document.querySelector('#messages'), question = document.querySelector('#question'), form = document.querySelector('#form'), send = document.querySelector('#send'), status = document.querySelector('#status'), suggestions = document.querySelector('#suggestions');
+    const starter = ['What schemas can you validate?', 'Validate the event example', 'Show me a wrong-type retry demo', 'Show me an exhausted contract retry'];
+    function addMessage(role, text, data, ok) {
+      const box = document.createElement('article'); box.className = `message ${role}`;
+      box.innerHTML = `<div class="label">${role === 'user' ? 'You' : 'MCP server'}</div><p>${text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</p>`;
+      if (data) { const badge = document.createElement('span'); badge.className = `result-badge ${ok ? 'pass' : 'fail'}`; badge.textContent = ok ? 'Validated / usable' : 'Rejected / withheld'; box.append(badge); const pre=document.createElement('pre'); pre.textContent=JSON.stringify(data,null,2); box.append(pre); }
+      messages.append(box); messages.scrollTop=messages.scrollHeight;
+    }
+    function renderSuggestions(items) { suggestions.replaceChildren(...(items || starter).map(item => { const b=document.createElement('button'); b.type='button'; b.textContent=item; b.onclick=()=>{question.value=item; form.requestSubmit();}; return b; })); }
+    async function ask(value) { send.disabled=true; status.textContent='Calling the MCP server…'; try { const response=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:value})}); const result=await response.json(); addMessage('assistant',result.message || 'No response.',result.data,result.ok); renderSuggestions(result.suggestions); status.textContent='MCP bridge ready'; } catch (error) { addMessage('assistant',`Could not reach the MCP bridge: ${error.message}`); status.textContent='MCP bridge unavailable'; } finally { send.disabled=false; question.focus(); } }
+    form.addEventListener('submit', event => { event.preventDefault(); const value=question.value.trim(); if(!value) return; addMessage('user',value); question.value=''; ask(value); });
+    addMessage('assistant','Ask me to list schemas, validate an event or contract, or show a retry scenario. The JSON result is expandable so you can see exactly what the MCP server returned.'); renderSuggestions(starter); fetch('/api/health').then(r=>r.json()).then(()=>status.textContent='MCP bridge ready').catch(()=>status.textContent='Start the local web bridge to connect');
+  </script>
+</body>
+</html>

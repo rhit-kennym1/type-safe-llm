@@ -244,6 +244,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Security-Policy",
@@ -251,6 +252,7 @@ class Handler(BaseHTTPRequestHandler):
                          "font-src https://fonts.gstatic.com; frame-ancestors 'none'")
         self.end_headers()
         self.wfile.write(body)
+        self.wfile.flush()
 
     def _json(self, status: int, payload: Any) -> None:
         self._send(status, json.dumps(payload).encode(), "application/json")
