@@ -72,20 +72,21 @@ Not built: XML and CSV, Azure hosting, a Kotlin MCP adapter, live experiment run
 
 ## 5. Results so far
 
-All numbers are from scripted runs: each case's model responses are fixed, so every track sees identical input.
+All numbers are from scripted runs on Windows (Oct 23): each case's model responses are fixed, so every track
+sees identical input.
 Source: [REPORT.md](../experiments/results/REPORT.md).
 
 | | Kotlin library | Python, in-process | Python, over MCP |
 |---|---|---|---|
-| Correct on schema-detectable cases | 35/38 | 36/38 | 36/38 |
+| Correct on schema-detectable cases | 35/38 | 36/38 | 35/38 |
 | Bad output returned as valid (leaks) | 3 | 1 | 1 |
-| Good output rejected | 0 | 1 | 1 |
+| Good output rejected | 0 | 1 | 2 |
 | Recovered after a bad first answer | 6/6 | 6/6 | 6/6 |
 | Problems named per error | first only | all | all |
-| Mean error length sent to the model | 179 chars | 73 chars | 73 chars |
-| Prompt size, attempts 1 / 2 / 3 | 993 / 1,481 / 1,975 | 1,513 / 1,918 / 1,924 | same as in-process |
+| Mean error length sent to the model | 176 chars | 73 chars | 73 chars |
+| Prompt size, attempts 1 / 2 / 3 | 993 / 1,479 / 1,970 | 1,513 / 1,918 / 1,924 | same as in-process |
 | Est. cost per 1,000 extractions (gemini-3.1-flash-lite) | $0.37 | $0.45 | $0.45 |
-| Overhead per extraction, median / p95 | 0.12 / 0.39 ms | 0.90 / 1.51 ms | 38.5 / 51.0 ms |
+| Overhead per extraction, median / p95 | 0.09 / 0.29 ms | 0.82 / 1.27 ms | 33.5 / 42.0 ms |
 | Rule keywords shown to the model (4 types) | 0 | 21 | 21 |
 
 What this says:
@@ -98,8 +99,9 @@ What this says:
 3. **Python's error feedback is better.** It names every problem in less than half the characters.
 4. **The library hides its rules from the model.** Domain rules live in code, so the model learns them only by
    breaking them. Python's schemas carry them.
-5. **MCP's protocol overhead is real but small next to a model call.** About 38 ms per extraction and 656 ms to start
-   a session, against model calls of hundreds to thousands of milliseconds. The library adds a tenth of a millisecond.
+5. **MCP's protocol overhead is real but small next to a model call.** About 34 ms per extraction and 1.8 s to start
+   a session on Windows (0.7 s on Linux), against model calls of hundreds to thousands of milliseconds. The library
+   adds under a tenth of a millisecond.
 6. **Crossing the MCP boundary can change the outcome, not just the latency.** On Windows, the server validates the
    60-level reply chain correctly but then can't send the result back: pydantic-core's serialization depth limit is
    lower there (a bare comment chain fails at 50 levels on Windows; over 100 on Linux). In-process Python and the

@@ -101,7 +101,7 @@ required, enums exact) either produces the object or throws, and the thrown mess
 
 **Why.** One code path; impossible for "validated" and "decoded" to disagree.
 
-**Cost.** The error is whatever kotlinx says, and it stops at the first problem. The report measured a mean of 179
+**Cost.** The error is whatever kotlinx says, and it stops at the first problem. The report measured a mean of 176
 characters per error, including developer hints the model can't act on ("Use 'ignoreUnknownKeys = true'...") and
 an echo of the input. Pydantic reports every problem in 73 characters on average. A cleaner error formatter is a
 small, contained improvement.
@@ -132,7 +132,7 @@ run during decoding and throw `IllegalArgumentException`, which the retry loop c
 
 **Why.** It's the natural shape for a chat API, and the model sees its own previous answers.
 
-**Cost.** Prompts grow linearly: 993 → 1,481 → 1,975 characters over three attempts, against Python's rebuilt
+**Cost.** Prompts grow linearly: 993 → 1,479 → 1,970 characters over three attempts, against Python's rebuilt
 prompt at 1,513 → 1,918 → 1,924 ([report §2](../experiments/results/REPORT.md#2-cost-what-each-track-sends-to-the-model)). At three attempts it doesn't matter; it would at higher limits
 or with large source documents. Python's first prompt is larger because it embeds the source and stricter
 instructions.
@@ -224,8 +224,8 @@ The host calls the model, sends the answer to `validate_output`, and retries wit
 host can decide that nothing unvalidated reaches the application. In tool-calling mode the model may skip the tool,
 so the host has to re-validate the final answer anyway.
 
-**Cost.** Two protocol round trips per attempt: ~9.9 ms each over stdio, ~38.5 ms of protocol time per extraction,
-and ~656 ms to start a session ([report §3](../experiments/results/REPORT.md#3-latency-overhead-scripted-model-time-excluded)). Small next to a model call; large next to the library's 0.12 ms.
+**Cost.** Two protocol round trips per attempt: ~8.8 ms each over stdio, ~33.5 ms of protocol time per extraction,
+and ~1.8 s to start a session on Windows (~0.7 s on Linux) ([report §3](../experiments/results/REPORT.md#3-latency-overhead-scripted-model-time-excluded)). Small next to a model call; large next to the library's 0.09 ms.
 
 The result also has to survive serialization back to the host. On Windows, pydantic-core's depth limit is low enough
 that a validated 60-level reply chain can't be returned at all; the host gets a tool error instead of an answer. The
