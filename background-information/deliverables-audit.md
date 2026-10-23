@@ -20,7 +20,7 @@ Status is based on what is in the repository, not on what was planned.
 | 9 | Configurable failure behavior | 🟡 `maxAttempts`; always throws `TypedOutputException` | ✅ `max_retries`; returns a `RetryResult` with a status | Library has no "return a failure result" option |
 | 10 | Detailed error reporting | 🟡 first error only, raw kotlinx text (mean 179 chars) | ✅ every error, with path and code (mean 73 chars) | Library error formatter ([D4](design-decisions.md#d4)) |
 | 11 | Automated test suite | ✅ 65 tests across 5 modules (2 live, opt-in) | ✅ 63 tests (2 live, opt-in), including a real stdio MCP session | Plus a 42-case shared corpus run by both; CI runs both tracks |
-| 12 | Complex / nested types | ✅ nested, lists, optional, enums, sealed types, recursion | ✅ nested, lists, optional, enums; sealed and recursive in the benchmark schemas | — |
+| 12 | Complex / nested types | ✅ nested, lists, optional, enums, sealed types, recursion | 🟡 nested, lists, optional, enums; sealed and recursive in the benchmark schemas | Over MCP on Windows, results nested past ~50 levels can't be returned |
 | 13 | Observability and logging | 🟡 `onAttempt` hook with raw output, error, token usage, duration | 🟡 every attempt recorded in the result | No structured logging on either |
 | 14 | API usability | ✅ `llm.call<Event>(prompt)` | ✅ discoverable tools, prompt and schema list | Not yet tried by anyone outside the team |
 | 15 | XML / YAML / CSV reliability testing | ❌ | ❌ | Depends on feature 4 |

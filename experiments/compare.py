@@ -20,6 +20,7 @@ TRACK_LABEL = {
     "python-core": "Python validator (in-process)",
     "mcp-server": "Python validator over MCP",
 }
+SERVER_ERROR_PREFIX = "server error: "  # set by the MCP runner when validate_output itself fails
 CHARS_PER_TOKEN = 4  # rough English/JSON average; only used when the provider reported no real counts
 
 
@@ -70,6 +71,8 @@ def classify(track: str, error: str | None, response_chars: int) -> str:
     if response_chars == 0:
         return "empty response"
     e = error or ""
+    if e.startswith(SERVER_ERROR_PREFIX):
+        return "MCP server failed to respond"
     if track == "kotlin-library":
         rules = [
             (r"constraint violated", "domain rule"),
@@ -128,7 +131,9 @@ def summarize(records: list[dict], cases: dict[str, dict], prices: dict, model_f
     tokens_out = [sum(a["output_tokens"] or 0 for a in r["attempts"]) for r in records
                   if r["attempts"] and all(a["output_tokens"] is not None for a in r["attempts"])]
     attempt_latency = [a["latency_ms"] for r in records for a in r["attempts"]]
-    error_lengths = [len(a["error"]) for r in records for a in r["attempts"] if a["error"]]
+    # Only validation errors, the feedback a model would see; server failures aren't sent to the model.
+    error_lengths = [len(a["error"]) for r in records for a in r["attempts"]
+                     if a["error"] and not a["error"].startswith(SERVER_ERROR_PREFIX)]
     real_tokens = bool(tokens_in) and len(tokens_in) == len(records)
     in_tok = statistics.mean(tokens_in) if real_tokens else statistics.mean(prompt_chars) / CHARS_PER_TOKEN
     out_tok = statistics.mean(tokens_out) if real_tokens and tokens_out else statistics.mean(response_chars) / CHARS_PER_TOKEN
@@ -254,7 +259,10 @@ def outcome_cell(rec: dict | None, case: dict) -> str:
     if rec is None:
         return "not run"
     n = len(rec["attempts"])
-    text = f"validated ({n})" if rec["ok"] else ("provider error" if rec["status"] == "provider_error" else f"rejected ({n})")
+    if rec["ok"]:
+        text = f"validated ({n})"
+    else:
+        text = {"provider_error": "provider error", "tool_error": f"server error ({n})"}.get(rec["status"], f"rejected ({n})")
     wrong = case["detectable"] and rec["ok"] != (case["ideal"] == "accept")
     return f"**{text}** ⚠" if wrong else text
 
@@ -342,7 +350,8 @@ def main() -> None:
                     continue
                 first_error = next((a["error"] for a in rec["attempts"] if a["error"]), None)
                 detail = f"first error: `{first_error[:160]}`" if first_error else "accepted on the first attempt"
-                w(f"- {TRACK_LABEL.get(k[0], k[0])}: {'validated' if rec['ok'] else 'rejected'}; {detail}")
+                verdict = "validated" if rec["ok"] else ("server error" if rec["status"] == "tool_error" else "rejected")
+                w(f"- {TRACK_LABEL.get(k[0], k[0])}: {verdict}; {detail}")
             w("")
 
         w("### How each track classifies the first failure")

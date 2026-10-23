@@ -100,10 +100,15 @@ What this says:
    breaking them. Python's schemas carry them.
 5. **MCP's protocol overhead is real but small next to a model call.** About 38 ms per extraction and 656 ms to start
    a session, against model calls of hundreds to thousands of milliseconds. The library adds a tenth of a millisecond.
-6. **Cost comparisons are confounded.** Kotlin looks cheaper partly because it wrongly accepted some bad answers on
+6. **Crossing the MCP boundary can change the outcome, not just the latency.** On Windows, the server validates the
+   60-level reply chain correctly but then can't send the result back: pydantic-core's serialization depth limit is
+   lower there (a bare comment chain fails at 50 levels on Windows; over 100 on Linux). In-process Python and the
+   Kotlin library both return it. It only affects deeply recursive data; the project's contract and event types are
+   4–5 levels deep.
+7. **Cost comparisons are confounded.** Kotlin looks cheaper partly because it wrongly accepted some bad answers on
    the first try. Per-attempt prompt size is the fair comparison: Kotlin's prompts start smaller but grow with every
    retry, Python's stay flat.
-7. **Validation can't catch wrong-but-plausible answers.** Hallucinated clauses and followed prompt injections pass
+8. **Validation can't catch wrong-but-plausible answers.** Hallucinated clauses and followed prompt injections pass
    every track.
 
 Missing: live runs, which show how often real models make each mistake. Commands are in
@@ -142,6 +147,9 @@ The MCP protocol has no feature that makes a model's answer match a schema. See
   `IllegalArgumentException` crash the call instead of triggering a retry.
 - Kotlin errors name only the first problem.
 - The MCP server only validates against the schemas it ships with.
+- Over MCP on Windows, results nested beyond roughly 50 levels can't be returned (pydantic-core serialization limit).
+  Separately, Pydantic's JSON parser rejects input nested beyond about 200 levels on every platform, so even
+  in-process Python refuses a valid 100-level reply chain.
 - No XML or CSV.
 - No live measurements.
 - The Ktor demo and its tests have been changed this week but not compiled in the environment the changes were made
@@ -167,5 +175,7 @@ The MCP protocol has no feature that makes a model's answer match a schema. See
 2. With a go-ahead: close the Kotlin leaks; add rule annotations shared by schema and validator; replace the
    library's error text with a full, clean report.
 3. Add fence stripping to the MCP validator, or document why it's left out.
-4. XML/CSV per Blaise's answer to question 2.
-5. Add a demo UI page for the cases where the tracks disagree.
+4. Decide with Mark and Rishi whether `validate_output` should return its data as a JSON string, which avoids the
+   Windows depth limit at the cost of a less typed result.
+5. XML/CSV per Blaise's answer to question 2.
+6. Add a demo UI page for the cases where the tracks disagree.

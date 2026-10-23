@@ -1,6 +1,6 @@
 # Experiment results: wrapper library vs. MCP server
 
-Generated 2026-10-23 00:23 UTC by `experiments/compare.py` from 126 result records. Regenerate after any run; do not edit by hand.
+Generated 2026-10-23 19:44 UTC by `experiments/compare.py` from 126 result records. Regenerate after any run; do not edit by hand.
 
 Corpus: 42 cases (baseline 4, recovery 6, format 5, types 6, constraints 7, structure 8, semantic 3, injection 2, stall 1), max 3 attempts per case. Case definitions: `experiments/cases/build_cases.py`.
 

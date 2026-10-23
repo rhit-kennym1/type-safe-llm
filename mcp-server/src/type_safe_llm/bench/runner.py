@@ -35,6 +35,7 @@ from .schemas import BENCH_SCHEMAS
 REPO = Path(__file__).resolve().parents[4]
 DEFAULT_CASES = REPO / "experiments" / "cases" / "cases.json"
 TRACKS = ("python-core", "mcp-server")
+TOOL_ERROR_PREFIX = "server error: "  # marks attempts where validate_output itself failed; compare.py keys on it
 
 
 def load_cases(path: Path = DEFAULT_CASES) -> dict[str, Any]:
@@ -128,7 +129,13 @@ async def run_mcp_case(session: ClientSession, case: dict, gen: Generator, max_a
             break
         call = await session.call_tool("validate_output", {"schema_name": target, "content": content})
         if call.isError or call.structuredContent is None:
-            raise RuntimeError(f"validate_output failed: {call.content}")
+            # The server failed to answer (e.g. it couldn't serialize a deeply nested result), so the host never
+            # learns whether the output was valid. Recorded as this case's outcome rather than aborting the run;
+            # retrying wouldn't help, because the same output would hit the same failure.
+            text = " ".join(getattr(c, "text", "") for c in call.content).strip() or "no structured result"
+            status, error = "tool_error", text
+            results.append((False, f"{TOOL_ERROR_PREFIX}{text}", content))
+            break
         result = ValidationResult.model_validate(call.structuredContent)
         results.append((result.ok, describe(result.errors), content))
         if result.ok:

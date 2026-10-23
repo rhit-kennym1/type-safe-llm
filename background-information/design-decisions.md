@@ -227,6 +227,11 @@ so the host has to re-validate the final answer anyway.
 **Cost.** Two protocol round trips per attempt: ~9.9 ms each over stdio, ~38.5 ms of protocol time per extraction,
 and ~656 ms to start a session ([report §3](../experiments/results/REPORT.md#3-latency-overhead-scripted-model-time-excluded)). Small next to a model call; large next to the library's 0.12 ms.
 
+The result also has to survive serialization back to the host. On Windows, pydantic-core's depth limit is low enough
+that a validated 60-level reply chain can't be returned at all; the host gets a tool error instead of an answer. The
+benchmark records this as a `tool_error` outcome. Returning `data` as a JSON string would avoid it but makes the
+result less typed for hosts.
+
 <a id="d13"></a>
 ## D13. A fixed catalog of named schemas (implicit)
 

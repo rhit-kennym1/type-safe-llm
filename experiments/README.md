@@ -99,3 +99,6 @@ On `gemini-3.1-flash-lite` the scripted estimate is well under a dollar for the 
   each mistake; live mode does.
 - Each track uses its own prompt design as built, so prompt-size differences reflect those designs.
 - Timings come from one machine. Ratios between tracks are meaningful; absolute numbers are indicative.
+- Outcomes can depend on the platform. Over MCP on Windows, `thread-deep-60` comes back as `server error`: the server
+  validates it but can't serialize the 60-level result back to the host. The committed results were generated on
+  Linux, where it passes; rerun on Windows to see the difference in the report.

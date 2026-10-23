@@ -4,11 +4,12 @@ import asyncio
 import json
 import sys
 from datetime import timedelta
+from types import SimpleNamespace
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from type_safe_llm.bench.runner import Generator, load_cases, main, run_core_case, run_mcp_case
+from type_safe_llm.bench.runner import TOOL_ERROR_PREFIX, Generator, load_cases, main, run_core_case, run_mcp_case
 from type_safe_llm.bench.schemas import BENCH_SCHEMAS
 from type_safe_llm.core import generate_validated
 
@@ -83,9 +84,32 @@ def test_mcp_track_matches_in_process_validation():
     over_mcp = asyncio.run(run())
     in_process = core_results()
     for cid in ids:
+        if over_mcp[cid]["status"] == "tool_error":
+            # Known protocol difference, not a validation difference: pydantic-core's serialization depth limit is
+            # lower on Windows, so the server validates the 60-level thread but can't send the result back.
+            assert cid == "thread-deep-60" and "depth" in over_mcp[cid]["error"], over_mcp[cid]["error"]
+            assert in_process[cid]["status"] == "validated"
+            continue
         assert over_mcp[cid]["status"] == in_process[cid]["status"], cid
         assert len(over_mcp[cid]["attempts"]) == len(in_process[cid]["attempts"]), cid
         assert over_mcp[cid]["data"] == in_process[cid]["data"], cid
+
+
+def test_a_server_failure_is_recorded_as_the_outcome_not_a_crash():
+    class FailingSession:
+        async def get_prompt(self, name, arguments):
+            return SimpleNamespace(messages=[SimpleNamespace(content=SimpleNamespace(text="extract"))])
+
+        async def call_tool(self, name, arguments):
+            text = "Error executing tool validate_output: Circular reference detected (depth exceeded)"
+            return SimpleNamespace(isError=True, structuredContent=None, content=[SimpleNamespace(text=text)])
+
+    case = CASES["thread-deep-60"]
+    rec = asyncio.run(run_mcp_case(FailingSession(), case, Generator(responses=case["responses"]), MAX, "scripted"))
+    assert rec["status"] == "tool_error" and not rec["ok"] and rec["data"] is None
+    assert "depth exceeded" in rec["error"]
+    # One attempt: retrying can't help when the server, not the model output, is what failed.
+    assert len(rec["attempts"]) == 1 and rec["attempts"][0]["error"].startswith(TOOL_ERROR_PREFIX)
 
 
 def test_live_generator_records_usage_when_reported(fake_endpoint):
