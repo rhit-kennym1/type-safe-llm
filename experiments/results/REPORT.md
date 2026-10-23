@@ -1,6 +1,6 @@
 # Experiment results: wrapper library vs. MCP server
 
-Generated 2026-10-23 19:44 UTC by `experiments/compare.py` from 126 result records. Regenerate after any run; do not edit by hand.
+Generated 2026-10-23 19:50 UTC by `experiments/compare.py` from 126 result records. Regenerate after any run; do not edit by hand.
 
 Corpus: 42 cases (baseline 4, recovery 6, format 5, types 6, constraints 7, structure 8, semantic 3, injection 2, stall 1), max 3 attempts per case. Case definitions: `experiments/cases/build_cases.py`.
 
@@ -18,13 +18,13 @@ Scripted mode feeds every track byte-identical model responses, so differences c
 
 | | Kotlin library | Python validator (in-process) | Python validator over MCP |
 |---|---|---|---|
-| Correct outcome on schema-detectable cases | 35/38 (92%) | 36/38 (95%) | 36/38 (95%) |
+| Correct outcome on schema-detectable cases | 35/38 (92%) | 36/38 (95%) | 35/38 (92%) |
 | Bad output returned as valid data (leaks) | 3: `contract-bool-as-string`, `event-count-as-string`, `event-duplicate-key` | 1: `event-duplicate-key` | 1: `event-duplicate-key` |
-| Good output rejected (false rejects) | 0: none | 1: `event-code-fence` | 1: `event-code-fence` |
+| Good output rejected (false rejects) | 0: none | 1: `event-code-fence` | 2: `event-code-fence`, `thread-deep-60` |
 | Recovered after a bad first answer | 6/6 (100%) | 6/6 (100%) | 6/6 (100%) |
 | Wrong-but-well-formed output passed (expected; no schema can catch it) | 4/4 (100%) | 4/4 (100%) | 4/4 (100%) |
 | Problems named per error report | first one only | all of them | all of them |
-| Mean length of an error report sent back to the model | 179 chars | 73 chars | 73 chars |
+| Mean length of an error report sent back to the model | 176 chars | 73 chars | 73 chars |
 
 ### Outcome for every case
 
@@ -64,7 +64,7 @@ Numbers in parentheses are attempts used. ⚠ marks an outcome that differs from
 | `order-unknown-variant` | structure | reject | rejected (3) | rejected (3) | rejected (3) | A payment type that isn't one of the sealed branches. |
 | `order-cash-valid` | structure | accept | validated (1) | validated (1) | validated (1) | A branch with no fields besides the discriminator. |
 | `order-cash-with-extra` | structure | reject | rejected (3) | rejected (3) | rejected (3) | Extra fields on a field-less branch. |
-| `thread-deep-60` | structure | accept | validated (1) | validated (1) | validated (1) | A 60-level reply chain: recursion must not hit a depth limit. |
+| `thread-deep-60` | structure | accept | validated (1) | validated (1) | **server error (1)** ⚠ | A 60-level reply chain: recursion must not hit a depth limit. |
 | `event-extra-field` | structure | reject | rejected (3) | rejected (3) | rejected (3) | A top-level field that isn't in the schema. |
 | `event-nested-extra-field` | structure | reject | rejected (3) | rejected (3) | rejected (3) | An unknown field inside a nested object. |
 | `event-duplicate-key` | structure | reject | **validated (1)** ⚠ | **validated (1)** ⚠ | **validated (1)** ⚠ | The same key twice. JSON leaves this undefined; a strict validator should not silently pick one. |
@@ -95,10 +95,17 @@ Numbers in parentheses are attempts used. ⚠ marks an outcome that differs from
 - Python validator (in-process): rejected; first error: `auto_renew: bool_type: Input should be a valid boolean`
 - Python validator over MCP: rejected; first error: `auto_renew: bool_type: Input should be a valid boolean`
 
+**`thread-deep-60`**: A 60-level reply chain: recursion must not hit a depth limit.
+
+- Kotlin library: validated; accepted on the first attempt
+- Python validator (in-process): validated; accepted on the first attempt
+- Python validator over MCP: server error; first error: `server error: Error executing tool validate_output: Error serializing to JSON: ValueError: Circular reference detected (depth exceeded)`
+
 ### How each track classifies the first failure
 
 | Category | Kotlin library | Python validator (in-process) | Python validator over MCP |
 |---|---|---|---|
+| MCP server failed to respond | 0 | 0 | 1 |
 | domain rule | 7 | 7 | 7 |
 | empty response | 1 | 1 | 1 |
 | invalid enum value | 1 | 1 | 1 |
@@ -115,8 +122,8 @@ Characters of prompt and response text per extraction, retries included. Token a
 | | Kotlin library | Python validator (in-process) | Python validator over MCP |
 |---|---|---|---|
 | Mean attempts per extraction | 2.14 | 2.31 | 2.31 |
-| Prompt characters per extraction | 2,923 | 3,992 | 3,992 |
-| Estimated input tokens per extraction | 731 | 998 | 998 |
+| Prompt characters per extraction | 2,918 | 3,992 | 3,992 |
+| Estimated input tokens per extraction | 730 | 998 | 998 |
 | Estimated output tokens per extraction | 124 | 137 | 137 |
 | Estimated cost per 1,000 extractions (gemini-3.1-flash-lite) | $0.368 | $0.454 | $0.454 |
 
@@ -124,7 +131,7 @@ Prompt size per attempt on the cases that used all three attempts (shows how ret
 
 | | attempt 1 | attempt 2 | attempt 3 |
 |---|---|---|---|
-| Kotlin library | 993 chars | 1,481 chars | 1,975 chars |
+| Kotlin library | 993 chars | 1,479 chars | 1,970 chars |
 | Python validator (in-process) | 1,513 chars | 1,918 chars | 1,924 chars |
 | Python validator over MCP | 1,513 chars | 1,918 chars | 1,924 chars |
 
@@ -136,12 +143,12 @@ With scripted responses the model answers instantly, so this is pure library or 
 
 | | Kotlin library | Python validator (in-process) | Python validator over MCP |
 |---|---|---|---|
-| Median per extraction | 0.124 ms | 0.897 ms | 38.5 ms |
-| 95th percentile per extraction | 0.386 ms | 1.507 ms | 51.0 ms |
+| Median per extraction | 0.089 ms | 0.816 ms | 33.5 ms |
+| 95th percentile per extraction | 0.285 ms | 1.273 ms | 42.0 ms |
 | Timed samples | 2100 | 2100 | 2100 |
 | MCP round trips per extraction | — | — | 1 `prompts/get` + 1 `tools/call` per attempt |
-| Median time per MCP round trip | — | — | 9.865 ms |
-| One-time MCP session start (process + handshake) | — | — | 655.8 ms |
+| Median time per MCP round trip | — | — | 8.787 ms |
+| One-time MCP session start (process + handshake) | — | — | 1814.8 ms |
 
 ## 4. Live model runs
 
