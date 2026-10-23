@@ -1,9 +1,9 @@
 package dev.typedllm
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.serializer
-import kotlinx.serialization.ExperimentalSerializationApi
 
 /**
  * Returns a fully valid instance of the requested type, or throws [TypedOutputException].
@@ -34,15 +34,18 @@ class TypedLLM(
         val attempts = mutableListOf<Attempt>()
 
         repeat(maxAttempts) { i ->
-            val raw = provider.complete(CompletionRequest(messages.toList(), nativeSchema))
+            val started = System.nanoTime()
+            val completion = provider.completeWithUsage(CompletionRequest(messages.toList(), nativeSchema))
+            val durationMs = (System.nanoTime() - started) / 1_000_000
+            val raw = completion.text
             val error = try {
                 val value = format.decode(serializer, raw)
-                onAttempt(Attempt(i + 1, raw, null))
+                onAttempt(Attempt(i + 1, raw, null, completion.usage, durationMs))
                 return value
-            } catch (e: IllegalArgumentException) { // SerializationException is a subclass
+            } catch (e: IllegalArgumentException) { // SerializationException is a subclass; so are init-block require() failures
                 e.message ?: e::class.simpleName ?: "Unknown decode error"
             }
-            val attempt = Attempt(i + 1, raw, error)
+            val attempt = Attempt(i + 1, raw, error, completion.usage, durationMs)
             attempts += attempt
             onAttempt(attempt)
             messages += Message(Role.ASSISTANT, raw)

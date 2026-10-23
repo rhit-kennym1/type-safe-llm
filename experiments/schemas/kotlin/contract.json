@@ -1,0 +1,70 @@
+{
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string"
+        },
+        "parties": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "effective_date": {
+            "type": "string"
+        },
+        "expiration_date": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "payment_days": {
+            "type": "integer"
+        },
+        "auto_renew": {
+            "type": "boolean"
+        },
+        "clauses": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "payment",
+                            "termination",
+                            "confidentiality"
+                        ]
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "negotiated": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "kind",
+                    "text",
+                    "negotiated"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required": [
+        "title",
+        "parties",
+        "effective_date",
+        "payment_days",
+        "auto_renew",
+        "clauses"
+    ],
+    "additionalProperties": false
+}

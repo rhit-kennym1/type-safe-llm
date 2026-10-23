@@ -68,6 +68,30 @@ class DemoApiTest {
     }
 
     @Test
+    fun `targets catalogue includes event, thread, and order`() = testApplication {
+        start()
+        val body = client.get("/api/targets").bodyAsText()
+        assertTrue(body.contains("\"id\":\"event\""))
+        assertTrue(body.contains("\"id\":\"thread\""))
+        assertTrue(body.contains("\"id\":\"order\""))
+    }
+
+    @Test
+    fun `recursive scenario decodes a nested thread`() = testApplication {
+        val result = runScenario("thread-nested").result()
+        assertEquals(listOf(true), result.attempts.map { it.accepted })
+        assertIs<Outcome.Success>(result.outcome)
+    }
+
+    @Test
+    fun `polymorphic scenario fixes a missing discriminator`() = testApplication {
+        val result = runScenario("pay-missing-type").result()
+        // First attempt fails because the oneOf schema can't pick a branch; second attempt succeeds.
+        assertEquals(listOf(false, true), result.attempts.map { it.accepted })
+        assertIs<Outcome.Success>(result.outcome)
+    }
+
+    @Test
     fun `live run with an empty message is rejected`() = testApplication {
         assertEquals(HttpStatusCode.BadRequest, runLive("""{"message":"  ","modelId":"enforced"}""").status)
     }

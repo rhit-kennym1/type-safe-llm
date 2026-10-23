@@ -5,6 +5,7 @@ import dev.typedllm.CompletionRequest
 import dev.typedllm.Message
 import dev.typedllm.ProviderException
 import dev.typedllm.Role
+import dev.typedllm.TokenUsage
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -19,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Runs the provider against a local stand-in for the OpenAI API, so no key or network is needed. */
@@ -71,6 +73,18 @@ class OpenAiProviderTest {
         responseBody = """{"error":{"message":"bad key"}}"""
         val e = assertFailsWith<ProviderException> { provider(native = true).complete(request) }
         assertTrue(e.message!!.contains("401"))
+    }
+
+    @Test
+    fun `token usage is reported when the provider includes it`() = runTest {
+        responseBody = """{"choices":[{"message":{"content":"{}"}}],"usage":{"prompt_tokens":120,"completion_tokens":7,"total_tokens":127}}"""
+        val completion = provider(native = true).completeWithUsage(request)
+        assertEquals(TokenUsage(120, 7), completion.usage)
+    }
+
+    @Test
+    fun `missing usage is reported as null, not zero`() = runTest {
+        assertNull(provider(native = true).completeWithUsage(request).usage)
     }
 
     @Test

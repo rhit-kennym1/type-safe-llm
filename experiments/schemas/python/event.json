@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "BenchLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "city"
+      ],
+      "title": "BenchLocation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "starts_at": {
+      "format": "date-time",
+      "title": "Starts At",
+      "type": "string"
+    },
+    "attendee_count": {
+      "minimum": 0,
+      "title": "Attendee Count",
+      "type": "integer"
+    },
+    "category": {
+      "enum": [
+        "meeting",
+        "workshop",
+        "conference"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "location": {
+      "$ref": "#/$defs/BenchLocation"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "title",
+    "starts_at",
+    "attendee_count",
+    "category",
+    "location"
+  ],
+  "title": "BenchEvent",
+  "type": "object"
+}

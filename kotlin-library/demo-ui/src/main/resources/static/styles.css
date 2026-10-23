@@ -163,6 +163,16 @@ h2 {
 
 #message-input { font-size: 1.05rem; margin: 0; }
 
+.target-heading {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+
+.target-note {
+  margin: 0 0 0.75rem;
+}
+
 .fields {
   background: var(--panel);
   border: 1px solid var(--line);

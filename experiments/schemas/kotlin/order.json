@@ -1,0 +1,82 @@
+{
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string"
+        },
+        "total": {
+            "type": "number"
+        },
+        "payment": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "bank"
+                            ]
+                        },
+                        "routing": {
+                            "type": "string"
+                        },
+                        "account": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "routing",
+                        "account"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "card"
+                            ]
+                        },
+                        "last4": {
+                            "type": "string"
+                        },
+                        "holder": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "last4",
+                        "holder"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "cash"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "type"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        }
+    },
+    "required": [
+        "id",
+        "total",
+        "payment"
+    ],
+    "additionalProperties": false
+}

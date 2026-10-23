@@ -1,0 +1,62 @@
+{
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string"
+        },
+        "starts_at": {
+            "type": "string"
+        },
+        "attendee_count": {
+            "type": "integer"
+        },
+        "category": {
+            "type": "string",
+            "enum": [
+                "meeting",
+                "workshop",
+                "conference"
+            ]
+        },
+        "location": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "city"
+            ],
+            "additionalProperties": false
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "notes": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    },
+    "required": [
+        "title",
+        "starts_at",
+        "attendee_count",
+        "category",
+        "location"
+    ],
+    "additionalProperties": false
+}

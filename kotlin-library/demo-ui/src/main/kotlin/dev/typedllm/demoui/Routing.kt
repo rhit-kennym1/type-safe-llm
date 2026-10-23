@@ -17,6 +17,7 @@ fun Application.configureRouting(service: DemoService) {
     routing {
         route("/api") {
             get("/target") { call.respond(service.target) }
+            get("/targets") { call.respond(service.targets()) }
 
             get("/scenarios") { call.respond(service.scenarios()) }
             post("/scenarios/{id}/run") {

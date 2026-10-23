@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "BenchClause": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "payment",
+            "termination",
+            "confidentiality"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "negotiated": {
+          "title": "Negotiated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "text",
+        "negotiated"
+      ],
+      "title": "BenchClause",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "parties": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Parties",
+      "type": "array"
+    },
+    "effective_date": {
+      "format": "date",
+      "title": "Effective Date",
+      "type": "string"
+    },
+    "expiration_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expiration Date"
+    },
+    "payment_days": {
+      "maximum": 365,
+      "minimum": 0,
+      "title": "Payment Days",
+      "type": "integer"
+    },
+    "auto_renew": {
+      "title": "Auto Renew",
+      "type": "boolean"
+    },
+    "clauses": {
+      "items": {
+        "$ref": "#/$defs/BenchClause"
+      },
+      "minItems": 1,
+      "title": "Clauses",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title",
+    "parties",
+    "effective_date",
+    "payment_days",
+    "auto_renew",
+    "clauses"
+  ],
+  "title": "BenchContract",
+  "type": "object"
+}

@@ -1,0 +1,31 @@
+{
+  "_note": "USD per 1M tokens, standard paid tier, text input/output. Prices change: re-check the source before quoting a cost number to the client.",
+  "reference_model": "gemini-3.1-flash-lite",
+  "models": {
+    "gemini-3.1-flash-lite": {
+      "input": 0.25, "output": 1.50,
+      "source": "https://www.morphllm.com/gemini-api-pricing (checked against ai.google.dev on 2026-08-21)",
+      "checked": "2026-10-22"
+    },
+    "gemini-2.5-flash": {
+      "input": 0.30, "output": 2.50,
+      "source": "https://www.morphllm.com/gemini-api-pricing (checked against ai.google.dev on 2026-08-21)",
+      "checked": "2026-10-22"
+    },
+    "gemini-2.5-flash-lite": {
+      "input": 0.10, "output": 0.40,
+      "source": "https://www.morphllm.com/gemini-api-pricing (checked against ai.google.dev on 2026-08-21)",
+      "checked": "2026-10-22"
+    },
+    "gpt-4o-mini": {
+      "input": 0.15, "output": 0.60,
+      "source": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+      "checked": "2026-10-22"
+    },
+    "llama3.2:3b": {
+      "input": 0.0, "output": 0.0,
+      "source": "Runs locally through Ollama; no per-token charge",
+      "checked": "2026-10-22"
+    }
+  }
+}

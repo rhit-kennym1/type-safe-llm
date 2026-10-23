@@ -7,4 +7,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("core", "provider-openai", "demo-ui")
+include("core", "provider-openai", "provider-gemini", "demo-ui", "bench")

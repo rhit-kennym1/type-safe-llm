@@ -1,6 +1,16 @@
 package dev.typedllm
 
-data class Attempt(val number: Int, val rawOutput: String, val error: String?) {
+/**
+ * One round trip to the model. [usage] is null when the provider doesn't report tokens.
+ * [durationMs] covers the provider call only, not decoding.
+ */
+data class Attempt(
+    val number: Int,
+    val rawOutput: String,
+    val error: String?,
+    val usage: TokenUsage? = null,
+    val durationMs: Long = 0,
+) {
     val succeeded: Boolean get() = error == null
 }
 
@@ -9,7 +19,7 @@ class TypedOutputException(val target: String, val attempts: List<Attempt>) : Ru
     "Failed to produce a valid $target after ${attempts.size} attempt(s). Last error: ${attempts.lastOrNull()?.error}"
 )
 
-/** Thrown at schema-generation time for types the library can't describe yet (e.g. polymorphic or recursive). */
+/** Thrown at schema-generation time for types the library can't describe yet (e.g. open polymorphism). */
 class UnsupportedTypeException(message: String) : IllegalArgumentException(message)
 
 /**

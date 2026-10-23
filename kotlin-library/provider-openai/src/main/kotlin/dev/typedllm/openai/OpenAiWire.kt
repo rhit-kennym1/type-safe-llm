@@ -11,6 +11,7 @@ internal data class ChatRequest(
     val model: String,
     val messages: List<ChatMessage>,
     @SerialName("response_format") val responseFormat: ResponseFormat? = null,
+    val temperature: Double? = null,
 )
 
 @Serializable
@@ -30,7 +31,13 @@ internal data class JsonSchemaSpec(
 )
 
 @Serializable
-internal data class ChatResponse(val choices: List<Choice>)
+internal data class ChatResponse(val choices: List<Choice>, val usage: ChatUsage? = null)
+
+@Serializable
+internal data class ChatUsage(
+    @SerialName("prompt_tokens") val promptTokens: Int = 0,
+    @SerialName("completion_tokens") val completionTokens: Int = 0,
+)
 
 @Serializable
 internal data class Choice(val message: ResponseMessage)

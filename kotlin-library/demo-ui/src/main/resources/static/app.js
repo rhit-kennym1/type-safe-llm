@@ -10,7 +10,8 @@ const pause = () => (reduceMotion ? Promise.resolve() : new Promise((r) => setTi
 
 const state = {
   mode: "examples",
-  targetName: "",
+  targets: {},             // id -> target
+  activeTargetId: null,
   scenarios: [],
   selectedScenario: null,
   selectedModel: null,
@@ -49,8 +50,13 @@ function radioOption(name, value, title, description, onSelect) {
 
 // ---------- fields ----------
 
-function renderTarget(target) {
-  state.targetName = target.name;
+function activateTarget(targetId) {
+  const target = state.targets[targetId];
+  if (!target) return;
+  state.activeTargetId = targetId;
+  byId("target-heading").textContent = target.name;
+  byId("target-note").textContent = target.note ?? "";
+  byId("target-note").hidden = !target.note;
   byId("field-rows").replaceChildren(
     ...target.fields.map((field) =>
       element(
@@ -79,7 +85,9 @@ function renderScenarios(scenarios) {
 function selectScenario(id) {
   state.selectedScenario = id;
   document.querySelector(`input[name="scenario"][value="${CSS.escape(id)}"]`).checked = true;
-  byId("message-view").textContent = state.scenarios.find((s) => s.id === id).message;
+  const scenario = state.scenarios.find((s) => s.id === id);
+  byId("message-view").textContent = scenario.message;
+  activateTarget(scenario.targetId);
   clearRun();
 }
 
@@ -108,6 +116,13 @@ function setMode(mode) {
   byId("live-controls").hidden = !live;
   byId("message-view").hidden = live;
   byId("message-input").hidden = !live;
+  // Live mode always targets Event; examples mode shows whichever target the chosen scenario uses.
+  if (live) {
+    activateTarget("event");
+  } else if (state.selectedScenario) {
+    const scenario = state.scenarios.find((s) => s.id === state.selectedScenario);
+    if (scenario) activateTarget(scenario.targetId);
+  }
   clearRun();
 }
 
@@ -184,17 +199,18 @@ function attemptItem(attempt) {
 
 function renderOutcome(outcome) {
   const container = byId("result");
+  const targetName = state.targets[state.activeTargetId]?.name ?? "value";
   if (outcome.type === "success") {
     container.classList.add("success");
     container.replaceChildren(
-      element("p", { className: "result-title", text: `The program gets a complete ${state.targetName}` }),
+      element("p", { className: "result-title", text: `The program gets a complete ${targetName}` }),
       valueView(outcome.value),
     );
   } else {
     container.classList.add("failure");
     container.replaceChildren(
       element("p", { className: "result-title", text: `No usable answer after ${outcome.attempts} tries` }),
-      element("p", { text: `The program gets an error it can handle, never a half-filled ${state.targetName}.` }),
+      element("p", { text: `The program gets an error it can handle, never a half-filled ${targetName}.` }),
     );
   }
 }
@@ -235,12 +251,14 @@ async function init() {
   }
   byId("message-input").value = LIVE_SAMPLE;
 
-  const [target, scenarios, models] = await Promise.all([
-    request("/api/target"),
+  const [targets, scenarios, models] = await Promise.all([
+    request("/api/targets"),
     request("/api/scenarios"),
     request("/api/live/models"),
   ]);
-  renderTarget(target);
+  for (const t of targets) state.targets[t.id] = t;
+  // Pick a target to show before any scenario is selected, so the fields panel isn't empty on load.
+  if (targets.length > 0) activateTarget(targets[0].id);
   renderScenarios(scenarios);
   renderLiveModels(models);
 }

@@ -1,0 +1,33 @@
+{
+  "$defs": {
+    "BenchComment": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "minLength": 1,
+          "title": "Author",
+          "type": "string"
+        },
+        "body": {
+          "minLength": 1,
+          "title": "Body",
+          "type": "string"
+        },
+        "replies": {
+          "items": {
+            "$ref": "#/$defs/BenchComment"
+          },
+          "title": "Replies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "author",
+        "body"
+      ],
+      "title": "BenchComment",
+      "type": "object"
+    }
+  },
+  "$ref": "#/$defs/BenchComment"
+}

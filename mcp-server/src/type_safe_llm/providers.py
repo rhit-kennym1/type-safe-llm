@@ -90,6 +90,16 @@ def chat_completion(
     The raw message is returned (not rebuilt) so providers that attach extra fields to
     tool calls get them back unchanged on the next turn.
     """
+    return chat_completion_full(config, messages, tools)["choices"][0]["message"]
+
+
+def chat_completion_full(
+    config: LiveConfig, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Like `chat_completion`, but returns the whole response body, including `usage` when the provider sends it.
+
+    The body is checked to contain an assistant message, so callers can index it directly.
+    """
     url = config.base_url.rstrip("/") + "/chat/completions"
     payload: dict[str, Any] = {"model": config.model, "messages": messages, "temperature": 0}
     if tools:
@@ -106,7 +116,7 @@ def chat_completion(
             message = data["choices"][0]["message"]
             if not isinstance(message, dict):
                 raise TypeError("message is not an object")
-            return message
+            return data
         except urllib.error.HTTPError as exc:
             if exc.code == 429 and attempt < MAX_RATE_LIMIT_RETRIES:
                 _sleep(_retry_delay(exc, attempt))

@@ -29,7 +29,7 @@
       <div id="live-controls" hidden>
         <h2>How the fields are sent</h2>
         <fieldset id="live-model-list"></fieldset>
-        <p class="hint">Runs on this computer with Ollama. Free, and no account needed.</p>
+        <p class="hint">The first two run on this computer with Ollama: free, no account needed. Gemini choices appear when GEMINI_API_KEY is set.</p>
       </div>
       <button id="run-button" type="button" disabled>Run</button>
     </aside>
@@ -43,6 +43,8 @@
 
       <section class="step" aria-labelledby="step-fields">
         <h2 id="step-fields"><span class="step-number">2</span>Fields we asked for</h2>
+        <p id="target-heading" class="target-heading"></p>
+        <p id="target-note" class="target-note hint"></p>
         <table class="fields">
           <thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead>
           <tbody id="field-rows"></tbody>

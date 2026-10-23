@@ -1,0 +1,27 @@
+{
+    "$ref": "#/$defs/dev_typedllm_bench_BenchComment",
+    "$defs": {
+        "dev_typedllm_bench_BenchComment": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "body": {
+                    "type": "string"
+                },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/dev_typedllm_bench_BenchComment"
+                    }
+                }
+            },
+            "required": [
+                "author",
+                "body"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

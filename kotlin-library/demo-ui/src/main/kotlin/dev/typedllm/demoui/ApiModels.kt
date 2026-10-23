@@ -10,11 +10,31 @@ import kotlinx.serialization.json.JsonObject
 @Serializable
 data class FieldView(val name: String, val type: String, val required: Boolean)
 
+/**
+ * A type the demo can extract into. One per request shape. The browser renders the fields
+ * table, source, and schema from these so a new target doesn't require UI changes.
+ */
 @Serializable
-data class TargetType(val name: String, val fields: List<FieldView>, val source: String, val schema: JsonObject)
+data class TargetType(
+    val id: String,
+    val name: String,
+    val fields: List<FieldView>,
+    val source: String,
+    val schema: JsonObject,
+    /** One-sentence note shown under the target name — explains why this target is worth showing. */
+    val note: String = "",
+)
 
 @Serializable
-data class ScenarioSummary(val id: String, val title: String, val description: String, val format: String, val message: String)
+data class ScenarioSummary(
+    val id: String,
+    val title: String,
+    val description: String,
+    val format: String,
+    val message: String,
+    /** Which target in /api/targets this scenario asks the library to produce. */
+    val targetId: String,
+)
 
 @Serializable
 data class LiveModelSummary(val id: String, val label: String, val description: String, val model: String)
@@ -38,7 +58,13 @@ sealed interface Outcome {
 }
 
 @Serializable
-data class RunResult(val format: String, val attempts: List<AttemptView>, val outcome: Outcome)
+data class RunResult(
+    val format: String,
+    val attempts: List<AttemptView>,
+    val outcome: Outcome,
+    /** Which target was decoded, so the browser can label the result and look up the field schema. */
+    val targetId: String,
+)
 
 @Serializable
 data class ApiError(val error: String)

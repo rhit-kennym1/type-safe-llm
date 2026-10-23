@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "BenchBank": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "bank",
+          "title": "Type",
+          "type": "string"
+        },
+        "routing": {
+          "pattern": "^\\d{9}$",
+          "title": "Routing",
+          "type": "string"
+        },
+        "account": {
+          "pattern": "^\\d{4,17}$",
+          "title": "Account",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "routing",
+        "account"
+      ],
+      "title": "BenchBank",
+      "type": "object"
+    },
+    "BenchCard": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "card",
+          "title": "Type",
+          "type": "string"
+        },
+        "last4": {
+          "pattern": "^\\d{4}$",
+          "title": "Last4",
+          "type": "string"
+        },
+        "holder": {
+          "minLength": 1,
+          "title": "Holder",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "last4",
+        "holder"
+      ],
+      "title": "BenchCard",
+      "type": "object"
+    },
+    "BenchCash": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "cash",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "BenchCash",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "total": {
+      "minimum": 0,
+      "title": "Total",
+      "type": "number"
+    },
+    "payment": {
+      "discriminator": {
+        "mapping": {
+          "bank": "#/$defs/BenchBank",
+          "card": "#/$defs/BenchCard",
+          "cash": "#/$defs/BenchCash"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BenchCard"
+        },
+        {
+          "$ref": "#/$defs/BenchBank"
+        },
+        {
+          "$ref": "#/$defs/BenchCash"
+        }
+      ],
+      "title": "Payment"
+    }
+  },
+  "required": [
+    "id",
+    "total",
+    "payment"
+  ],
+  "title": "BenchOrder",
+  "type": "object"
+}
