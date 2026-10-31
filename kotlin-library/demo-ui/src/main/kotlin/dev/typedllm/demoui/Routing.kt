@@ -11,7 +11,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 
-private const val MAX_MESSAGE_CHARS = 2_000
+private const val MAX_PROMPT_CHARS = 4_000
 
 fun Application.configureRouting(service: DemoService) {
     routing {
@@ -28,12 +28,16 @@ fun Application.configureRouting(service: DemoService) {
             get("/live/models") { call.respond(service.liveModels()) }
             post("/live/run") {
                 val request = call.receive<LiveRunRequest>()
-                if (request.message.isBlank() || request.message.length > MAX_MESSAGE_CHARS) {
-                    call.respond(HttpStatusCode.BadRequest, ApiError("Enter a message under $MAX_MESSAGE_CHARS characters."))
+                if (request.prompt.isBlank() || request.prompt.length > MAX_PROMPT_CHARS) {
+                    call.respond(HttpStatusCode.BadRequest, ApiError("Enter a prompt under $MAX_PROMPT_CHARS characters."))
+                    return@post
+                }
+                if (!service.hasTarget(request.targetId)) {
+                    call.respond(HttpStatusCode.BadRequest, ApiError("Unknown class '${request.targetId}'."))
                     return@post
                 }
                 try {
-                    val result = service.runLive(request.message, request.modelId)
+                    val result = service.runLive(request.prompt, request.modelId, request.targetId, request.safeguards)
                     if (result == null) call.respond(HttpStatusCode.NotFound) else call.respond(result)
                 } catch (e: ProviderException) {
                     call.respond(HttpStatusCode.BadGateway, ApiError(e.message ?: "The model provider failed."))

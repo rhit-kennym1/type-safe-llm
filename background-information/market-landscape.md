@@ -11,10 +11,10 @@ has a "give me a class back" API. Our wrapper library is **not novel as a concep
 nearly the same thing in Kotlin. What is still open:
 
 1. **Strictness.** Most tools return whatever a lenient parser accepts. None of the JVM tools we checked documents
-   domain-rule validation, and kotlinx-serialization itself lets quoted numbers through (our own library inherits
-   this; see the [report](../experiments/results/REPORT.md)).
+   domain-rule validation, and kotlinx-serialization itself lets quoted numbers through (our library now adds its
+   own type check to stop this).
 2. **Measured evidence.** Nobody publishes a side-by-side of library vs. MCP validation on the same adversarial
-   inputs. Our experiment harness is that comparison.
+   inputs. Our October experiment harness was that comparison; it will be rebuilt for live runs.
 3. **Validation as an MCP capability.** The protocol carries schemas but leaves checking model output to hosts.
    Almost no servers use the structured parts of the protocol today.
 

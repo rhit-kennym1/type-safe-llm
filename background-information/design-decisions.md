@@ -4,7 +4,8 @@ Why the system is built the way it is. Each entry gives the decision, the altern
 it costs. Entries marked **implicit** were made while building and are written down here for the first time;
 they're the ones most worth revisiting with Blaise.
 
-Evidence links point to [the experiment report](../experiments/results/REPORT.md) where a measurement exists.
+Measurements come from the October experiment harness (scripted runs, Oct 23). The harness has since been removed
+from the repository and will be rebuilt for live runs.
 
 | # | Decision | Track | Made |
 |---|---|---|---|
@@ -41,7 +42,7 @@ measured numbers instead of opinions (design doc feature 6).
 
 **Cost.** The two tracks drifted: different languages, different validators, different prompt designs, no shared
 code. The spike assumed "both can share one validator"; they don't. The experiments had to re-create matching types
-in both languages ([report §5](../experiments/results/REPORT.md#5-schema-parity-between-the-two-implementations)) to compare them fairly.
+in both languages to compare them fairly.
 
 <a id="d2"></a>
 ## D2. Kotlin, with kotlinx-serialization instead of reflection
@@ -66,10 +67,10 @@ produced at compile time, so schema generation needs no reflection and fails at 
 
 - Every target type must be `@Serializable`. Third-party classes need hand-written serializers.
 - kotlinx's default `Json` is less strict than it looks: the adversarial corpus found it **accepts quoted numbers
-  and booleans** (`"attendee_count": "40"`) and **silently takes the last of duplicated keys**. Those are the
-  library's three leaks in [report §1](../experiments/results/REPORT.md#1-correctness-on-the-adversarial-corpus-scripted-responses). Pydantic in strict mode rejects quoted primitives.
-- Proposed fix (not implemented): parse to a `JsonElement` tree first, check every primitive's JSON kind against
-  the descriptor and reject duplicate keys, then decode. About a day of work; needs a go-ahead.
+  and booleans** (`"attendee_count": "40"`) and **silently takes the last of duplicated keys**. Those were the
+  library's three leaks. Pydantic in strict mode rejects quoted primitives.
+- Fixed: `StrictJson` parses to a `JsonElement` tree first, checks every primitive's JSON kind against the
+  descriptor and rejects duplicate keys, then decodes.
 
 <a id="d3"></a>
 ## D3. The developer passes a class
@@ -101,7 +102,7 @@ required, enums exact) either produces the object or throws, and the thrown mess
 
 **Why.** One code path; impossible for "validated" and "decoded" to disagree.
 
-**Cost.** The error is whatever kotlinx says, and it stops at the first problem. The report measured a mean of 179
+**Cost.** The error is whatever kotlinx says, and it stops at the first problem. The report measured a mean of 176
 characters per error, including developer hints the model can't act on ("Use 'ignoreUnknownKeys = true'...") and
 an echo of the input. Pydantic reports every problem in 73 characters on average. A cleaner error formatter is a
 small, contained improvement.
@@ -132,8 +133,8 @@ run during decoding and throw `IllegalArgumentException`, which the retry loop c
 
 **Why.** It's the natural shape for a chat API, and the model sees its own previous answers.
 
-**Cost.** Prompts grow linearly: 993 → 1,481 → 1,975 characters over three attempts, against Python's rebuilt
-prompt at 1,513 → 1,918 → 1,924 ([report §2](../experiments/results/REPORT.md#2-cost-what-each-track-sends-to-the-model)). At three attempts it doesn't matter; it would at higher limits
+**Cost.** Prompts grow linearly: 993 → 1,479 → 1,970 characters over three attempts, against Python's rebuilt
+prompt at 1,513 → 1,918 → 1,924. At three attempts it doesn't matter; it would at higher limits
 or with large source documents. Python's first prompt is larger because it embeds the source and stricter
 instructions.
 
@@ -224,8 +225,8 @@ The host calls the model, sends the answer to `validate_output`, and retries wit
 host can decide that nothing unvalidated reaches the application. In tool-calling mode the model may skip the tool,
 so the host has to re-validate the final answer anyway.
 
-**Cost.** Two protocol round trips per attempt: ~9.9 ms each over stdio, ~38.5 ms of protocol time per extraction,
-and ~656 ms to start a session ([report §3](../experiments/results/REPORT.md#3-latency-overhead-scripted-model-time-excluded)). Small next to a model call; large next to the library's 0.12 ms.
+**Cost.** Two protocol round trips per attempt: ~8.8 ms each over stdio, ~33.5 ms of protocol time per extraction,
+and ~1.8 s to start a session on Windows (~0.7 s on Linux). Small next to a model call; large next to the library's 0.09 ms.
 
 The result also has to survive serialization back to the host. On Windows, pydantic-core's depth limit is low enough
 that a validated 60-level reply chain can't be returned at all; the host gets a tool error instead of an answer. The
@@ -283,4 +284,5 @@ library, the Python validator in-process, and the Python validator over a real M
 - Live mode reuses the same cases against a real model, to measure how often each mistake actually happens.
 
 **Cost.** Scripted mode can't tell you how often a model makes each mistake; only live runs can, and none have been
-run yet.
+run yet. The harness was removed in week 9 to keep the repository to the libraries, demos and their tests; this
+decision stands for when it is rebuilt.

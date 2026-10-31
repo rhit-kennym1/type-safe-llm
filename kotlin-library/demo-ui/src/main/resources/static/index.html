@@ -27,46 +27,73 @@
         <fieldset id="scenario-list"></fieldset>
       </div>
       <div id="live-controls" hidden>
-        <h2>How the fields are sent</h2>
+        <h2>Class to decode into</h2>
+        <fieldset id="live-target-list"></fieldset>
+        <h2>Model</h2>
         <fieldset id="live-model-list"></fieldset>
-        <p class="hint">The first two run on this computer with Ollama: free, no account needed. Gemini choices appear when GEMINI_API_KEY is set.</p>
+        <p class="hint">"Asked nicely" and "Enforced" run on this computer with Ollama: free, no account needed. Gemini choices appear when GEMINI_API_KEY is set.</p>
+      </div>
+      <div id="safeguard-controls" hidden>
+        <h2>Safeguards</h2>
+        <fieldset id="safeguards" class="safeguards">
+          <label class="check"><input type="checkbox" id="sg-missing"><span><b>Allow missing</b><small>Each field can be marked "missing"; the model is told never to guess.</small></span></label>
+          <label class="check"><input type="checkbox" id="sg-evidence"><span><b>Evidence quotes</b><small>Each value comes with the exact source quote; the library checks the quote is in the source and the value is in the quote.</small></span></label>
+          <label class="check"><input type="checkbox" id="sg-targeted"><span><b>Targeted retry</b><small>Missing or unsupported fields get one "quote it or mark it missing" follow-up instead of "fix the error".</small></span></label>
+          <label class="check"><input type="checkbox" id="sg-crosscheck"><span><b>Cross-check</b><small>One extra call asks only for supporting quotes; values it can't support are flagged.</small></span></label>
+        </fieldset>
       </div>
       <button id="run-button" type="button" disabled>Run</button>
     </aside>
 
     <div class="flow">
-      <section class="step" aria-labelledby="step-message">
-        <h2 id="step-message"><span class="step-number">1</span>Message</h2>
-        <blockquote id="message-view" class="message"></blockquote>
-        <textarea id="message-input" rows="3" hidden aria-label="Message to send to the model"></textarea>
-      </section>
-
-      <section class="step" aria-labelledby="step-fields">
-        <h2 id="step-fields"><span class="step-number">2</span>Fields we asked for</h2>
+      <section class="step" aria-labelledby="step-class">
+        <h2 id="step-class"><span class="step-number">1</span>The class the developer wrote</h2>
         <p id="target-heading" class="target-heading"></p>
         <p id="target-note" class="target-note hint"></p>
+        <pre class="source"><code id="target-source"></code></pre>
         <table class="fields">
           <thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead>
           <tbody id="field-rows"></tbody>
         </table>
-        <details class="code">
-          <summary>Show code</summary>
-          <p>The Kotlin type a developer writes</p>
-          <pre><code id="target-source"></code></pre>
-          <p>The JSON Schema the library generates from it</p>
+      </section>
+
+      <section class="step" aria-labelledby="step-schema">
+        <h2 id="step-schema"><span class="step-number">2</span>The JSON Schema the library generates from it</h2>
+        <p class="hint">Generated at run time from the class, without reflection. This is how the model learns the exact field names and shape.</p>
+        <details class="code" open>
+          <summary>JSON Schema</summary>
           <pre><code id="target-schema"></code></pre>
         </details>
       </section>
 
+      <section class="step" aria-labelledby="step-message">
+        <h2 id="step-message"><span class="step-number">3</span>The prompt</h2>
+        <p id="prompt-hint" class="hint"></p>
+        <blockquote id="message-view" class="message"></blockquote>
+        <textarea id="message-input" rows="8" hidden aria-label="Prompt to send to the model"></textarea>
+        <p id="prompt-count" class="hint count" hidden></p>
+      </section>
+
+      <section class="step" aria-labelledby="step-sent">
+        <h2 id="step-sent"><span class="step-number">4</span>What the model receives</h2>
+        <p id="sent-empty" class="empty">Press Run to see the exact messages the library sends.</p>
+        <p id="sent-note" class="sent-note" hidden></p>
+        <ol id="sent-messages" class="messages"></ol>
+      </section>
+
       <section class="step" aria-labelledby="step-answers">
-        <h2 id="step-answers"><span class="step-number">3</span>Answers from the model</h2>
-        <p id="answers-empty" class="empty">Press Run to see each answer checked against the fields.</p>
+        <h2 id="step-answers"><span class="step-number">5</span>Answers and checks</h2>
+        <p id="answers-empty" class="empty">Each answer is decoded into the class. Decoding is the check: JSON syntax, known fields, required fields, types, enum values, and the sealed-type choice.</p>
         <ol id="attempts" class="attempts"></ol>
       </section>
 
       <section class="step" aria-labelledby="step-result" aria-live="polite">
-        <h2 id="step-result"><span class="step-number">4</span>Result</h2>
+        <h2 id="step-result"><span class="step-number">6</span>What the program gets</h2>
         <div id="result" class="result"></div>
+        <div id="field-report-wrap" class="field-report" hidden>
+          <h3>Field by field</h3>
+          <div class="table-wrap"><table><thead><tr><th>Field</th><th>Library says</th><th>Value</th><th>Quote</th><th>Why</th></tr></thead><tbody id="field-report"></tbody></table></div>
+        </div>
       </section>
     </div>
   </main>
@@ -75,12 +102,18 @@
     <li class="attempt">
       <div class="attempt-head">
         <span class="attempt-number"></span>
+        <span class="check"></span>
         <span class="verdict"></span>
       </div>
+      <p class="attempt-meta"></p>
       <p class="attempt-problem"></p>
       <pre class="attempt-output"></pre>
       <details class="attempt-error">
-        <summary>Exact error</summary>
+        <summary>Exact error from the decoder</summary>
+        <pre></pre>
+      </details>
+      <details class="attempt-sentback">
+        <summary>What the library sent back</summary>
         <pre></pre>
       </details>
     </li>

@@ -6,11 +6,10 @@ originals are kept for reference.
 
 | Companion document | Covers |
 |---|---|
-| [architecture.md](architecture.md) | Diagrams of both approaches and the experiment harness |
+| [architecture.md](architecture.md) | Diagrams of both approaches |
 | [design-decisions.md](design-decisions.md) | Why each choice was made, with alternatives and costs |
 | [market-landscape.md](market-landscape.md) | Existing tools, provider limits, what MCP provides natively |
 | [deliverables-audit.md](deliverables-audit.md) | Feature-by-feature status on both tracks |
-| [experiments/results/REPORT.md](../experiments/results/REPORT.md) | Measured results |
 
 ## 1. Problem
 
@@ -30,7 +29,7 @@ What "validated" covers, and what it can't:
 | Syntax | Is it JSON at all? | Yes |
 | Structure | Required fields present, correct types, no unknown fields, valid enum values | Yes |
 | Domain rules | Count ≥ 0, expiry after start, card last-four is four digits | Yes, when the type declares them |
-| Meaning | Is the extracted city actually the one in the email? | **No.** No schema can check this. The corpus includes 4 such cases; every track accepts them, as expected. |
+| Meaning | Is the extracted city actually the one in the email? | **No.** No schema can check this. The October test corpus had 4 such cases; every track accepted them, as expected. |
 
 ## 3. Two approaches
 
@@ -64,42 +63,44 @@ Full status: [deliverables-audit.md](deliverables-audit.md). Highlights since we
 
 - **Library**: recursive types, sealed types (polymorphism), field descriptions, token usage and timing per attempt,
   and a native Gemini provider alongside the OpenAI-compatible one. The demo UI can run Gemini when a key is set.
-- **Shared**: an experiment harness with a 42-case adversarial corpus run against both tracks, a generated report,
-  and CI for both tracks.
+- **Shared**: CI for both tracks. An experiment harness (a 42-case adversarial corpus and a missing-data suite) was
+  built and run in October, then removed so the repository holds only the libraries, demos and their tests. It will
+  be rebuilt for live runs.
 - **Docs**: architecture diagrams, design decisions, market landscape.
 
 Not built: XML and CSV, Azure hosting, a Kotlin MCP adapter, live experiment runs.
 
 ## 5. Results so far
 
-All numbers are from scripted runs: each case's model responses are fixed, so every track sees identical input.
-Source: [REPORT.md](../experiments/results/REPORT.md).
+All numbers are from scripted runs on Windows (Oct 23) of the experiment harness, since removed: each case's model
+responses were fixed, so every track saw identical input. The Kotlin leaks below have since been fixed.
 
 | | Kotlin library | Python, in-process | Python, over MCP |
 |---|---|---|---|
-| Correct on schema-detectable cases | 35/38 | 36/38 | 36/38 |
+| Correct on schema-detectable cases | 35/38 | 36/38 | 35/38 |
 | Bad output returned as valid (leaks) | 3 | 1 | 1 |
-| Good output rejected | 0 | 1 | 1 |
+| Good output rejected | 0 | 1 | 2 |
 | Recovered after a bad first answer | 6/6 | 6/6 | 6/6 |
 | Problems named per error | first only | all | all |
-| Mean error length sent to the model | 179 chars | 73 chars | 73 chars |
-| Prompt size, attempts 1 / 2 / 3 | 993 / 1,481 / 1,975 | 1,513 / 1,918 / 1,924 | same as in-process |
+| Mean error length sent to the model | 176 chars | 73 chars | 73 chars |
+| Prompt size, attempts 1 / 2 / 3 | 993 / 1,479 / 1,970 | 1,513 / 1,918 / 1,924 | same as in-process |
 | Est. cost per 1,000 extractions (gemini-3.1-flash-lite) | $0.37 | $0.45 | $0.45 |
-| Overhead per extraction, median / p95 | 0.12 / 0.39 ms | 0.90 / 1.51 ms | 38.5 / 51.0 ms |
+| Overhead per extraction, median / p95 | 0.09 / 0.29 ms | 0.82 / 1.27 ms | 33.5 / 42.0 ms |
 | Rule keywords shown to the model (4 types) | 0 | 21 | 21 |
 
 What this says:
 
-1. **Neither validator is as strict as it should be.** Both silently accept a duplicated key. kotlinx-serialization
-   also accepts `"40"` for an integer and `"true"` for a boolean. These are fixable, and the corpus will catch a
-   regression.
+1. **Neither validator was as strict as it should be.** Both silently accepted a duplicated key, and
+   kotlinx-serialization also accepted `"40"` for an integer and `"true"` for a boolean. The library now runs its own
+   type check before decoding and rejects all three; the Python validator still accepts duplicate keys.
 2. **The tracks fail in opposite directions.** The library strips Markdown fences, so it never wrongly rejects fenced
    JSON. The Python validator doesn't, so it spends retries on it.
 3. **Python's error feedback is better.** It names every problem in less than half the characters.
 4. **The library hides its rules from the model.** Domain rules live in code, so the model learns them only by
    breaking them. Python's schemas carry them.
-5. **MCP's protocol overhead is real but small next to a model call.** About 38 ms per extraction and 656 ms to start
-   a session, against model calls of hundreds to thousands of milliseconds. The library adds a tenth of a millisecond.
+5. **MCP's protocol overhead is real but small next to a model call.** About 34 ms per extraction and 1.8 s to start
+   a session on Windows (0.7 s on Linux), against model calls of hundreds to thousands of milliseconds. The library
+   adds under a tenth of a millisecond.
 6. **Crossing the MCP boundary can change the outcome, not just the latency.** On Windows, the server validates the
    60-level reply chain correctly but then can't send the result back: pydantic-core's serialization depth limit is
    lower there (a bare comment chain fails at 50 levels on Windows; over 100 on Linux). In-process Python and the
@@ -111,8 +112,7 @@ What this says:
 8. **Validation can't catch wrong-but-plausible answers.** Hallucinated clauses and followed prompt injections pass
    every track.
 
-Missing: live runs, which show how often real models make each mistake. Commands are in
-[experiments/README.md](../experiments/README.md).
+Missing: live runs, which show how often real models make each mistake.
 
 ## 6. Key decisions
 
@@ -142,16 +142,16 @@ The MCP protocol has no feature that makes a model's answer match a schema. See
 
 ## 8. Known limitations
 
-- Kotlin accepts quoted numbers and booleans; both tracks accept duplicate keys.
+- The Python track accepts duplicate keys.
 - Kotlin domain rules are invisible to the model, and rules that throw anything other than
   `IllegalArgumentException` crash the call instead of triggering a retry.
-- Kotlin errors name only the first problem.
+- Kotlin type errors are now listed together, but domain rules in `init` blocks still stop at the first failure.
 - The MCP server only validates against the schemas it ships with.
 - Over MCP on Windows, results nested beyond roughly 50 levels can't be returned (pydantic-core serialization limit).
   Separately, Pydantic's JSON parser rejects input nested beyond about 200 levels on every platform, so even
   in-process Python refuses a valid 100-level reply chain.
 - No XML or CSV.
-- No live measurements.
+- No live measurements, and no experiment harness in the repository until it is rebuilt.
 - The Ktor demo and its tests have been changed this week but not compiled in the environment the changes were made
   in; run `./gradlew build` locally before demoing.
 
@@ -169,13 +169,32 @@ The MCP protocol has no feature that makes a model's answer match a schema. See
 5. **Live evaluation budget.** Which models and how many runs? A full Gemini Flash-Lite pass is well under a dollar.
 6. **Azure.** Is hosting still in scope for this term, or a spring item?
 
-## 10. Next steps
+## 10. Roadmap
 
-1. Run live experiments on Ollama and Gemini, all three tracks.
-2. With a go-ahead: close the Kotlin leaks; add rule annotations shared by schema and validator; replace the
-   library's error text with a full, clean report.
-3. Add fence stripping to the MCP validator, or document why it's left out.
-4. Decide with Mark and Rishi whether `validate_output` should return its data as a JSON string, which avoids the
-   Windows depth limit at the cost of a less typed result.
-5. XML/CSV per Blaise's answer to question 2.
-6. Add a demo UI page for the cases where the tracks disagree.
+Research behind each choice is in the team's research log (Google Doc).
+
+**Done, awaiting live runs**
+1. Strict type pass before decoding (`StrictJson`): rejects quoted numbers and booleans, duplicate keys and plain
+   text, and reports every problem in one message.
+2. Near-exact quote matching for evidence checks: quotes of 12+ characters match source text that is at least 90% the
+   same, and the value is then checked against the source's own words, with a note on the field.
+3. Value normalization before comparing a value with its quote: number words, currency names and symbols, and
+   kg/g/lb/oz and km/mi conversions within 1%.
+
+**Next**
+4. Rebuild the experiments (adversarial corpus and missing-data suite) and run them live on Ollama and Gemini.
+5. Measure whether the cross-check adds anything over evidence quotes; it stays an opt-in switch until then.
+
+**Later**
+6. Character spans for each value, so the demo can highlight its evidence in the source.
+7. Few-shot examples as an option on `extract()`.
+8. MCP: fence stripping, and whether `validate_output` should return data as a JSON string (Windows depth limit).
+9. XML/CSV, depending on Blaise's answer to question 2.
+10. Rule annotations shared by the schema and the validator.
+
+**Future scope**
+11. Chunking and multiple passes for long documents (as in LangExtract), if the contract use case means multi-page
+    input.
+12. Schema-centered design with per-language clients and a hosted service, depending on Blaise's answers about
+    languages and hosting.
+13. A verifier model for paraphrased values, only if evidence checks still flag too many correct answers.

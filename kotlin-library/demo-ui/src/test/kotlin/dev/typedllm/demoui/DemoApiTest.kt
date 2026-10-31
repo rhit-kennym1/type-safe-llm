@@ -74,6 +74,7 @@ class DemoApiTest {
         assertTrue(body.contains("\"id\":\"event\""))
         assertTrue(body.contains("\"id\":\"thread\""))
         assertTrue(body.contains("\"id\":\"order\""))
+        assertTrue(body.contains("\"id\":\"contract\""))
     }
 
     @Test
@@ -93,12 +94,19 @@ class DemoApiTest {
 
     @Test
     fun `live run with an empty message is rejected`() = testApplication {
-        assertEquals(HttpStatusCode.BadRequest, runLive("""{"message":"  ","modelId":"enforced"}""").status)
+        assertEquals(HttpStatusCode.BadRequest, runLive("""{"prompt":"  ","modelId":"enforced"}""").status)
+    }
+
+    @Test
+    fun `live run with an unknown class is rejected`() = testApplication {
+        val response = runLive("""{"prompt":"lunch friday?","modelId":"enforced","targetId":"spaceship"}""")
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertTrue(response.bodyAsText().contains("spaceship"))
     }
 
     @Test
     fun `live run reports an unreachable provider`() = testApplication {
-        val response = runLive("""{"message":"lunch friday?","modelId":"enforced"}""")
+        val response = runLive("""{"prompt":"lunch friday?","modelId":"enforced","targetId":"order"}""")
         assertEquals(HttpStatusCode.BadGateway, response.status)
         assertTrue(response.bodyAsText().contains("Could not reach"))
     }

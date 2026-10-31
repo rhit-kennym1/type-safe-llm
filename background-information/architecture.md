@@ -1,6 +1,6 @@
 # Architecture
 
-How the two approaches are built, where they share ideas, and how the experiment harness compares them.
+How the two approaches are built and where they share ideas.
 Diagrams are Mermaid, so they render on GitHub. Rendered SVGs are in [`diagrams/`](diagrams/) for slides.
 
 ## 1. The system at a glance
@@ -70,7 +70,7 @@ Points worth knowing:
 
 - **No reflection.** `SchemaGenerator` reads the descriptor that the kotlinx-serialization compiler plugin generates, so every target type must be `@Serializable`. See [design-decisions.md](design-decisions.md#d2) for the trade-off.
 - **Decoding is the validation.** A strict `Json` decoder rejects unknown keys, missing required fields, bad enum values and wrong JSON types. Domain rules (ranges, patterns, dates) live in `init` blocks that run during decoding.
-- **Retries resend the conversation.** Each retry appends the bad answer and the error, so prompts grow with every attempt (measured in the [report](../experiments/results/REPORT.md#2-cost-what-each-track-sends-to-the-model)).
+- **Retries resend the conversation.** Each retry appends the bad answer and the error, so prompts grow with every attempt.
 - **Native structured output is optional.** When on, providers receive the schema in their own dialect: `StrictSchema` for OpenAI strict mode, `GeminiSchema` for Gemini's `responseJsonSchema`. Both rewrite `oneOf` to `anyOf` and inline a root `$ref`, because those providers reject or silently ignore the originals. The library validates the response either way.
 
 ### Module layout
@@ -81,15 +81,11 @@ flowchart BT
     openai["provider-openai<br/>OpenAI-compatible: OpenAI, Ollama, Azure, Gemini shim"]
     gemini["provider-gemini<br/>native Gemini generateContent"]
     demo["demo-ui<br/>Ktor web demo"]
-    bench["bench<br/>experiment harness"]
     openai --> core
     gemini --> core
     demo --> core
     demo --> openai
     demo --> gemini
-    bench --> core
-    bench --> openai
-    bench --> gemini
 ```
 
 `Provider` is the extension point: implement `complete`, and override `completeWithUsage` to report tokens. Adding
@@ -97,7 +93,7 @@ Anthropic, for example, is a new module with no changes to `core`.
 
 ## 3. MCP server: host-driven validation
 
-This is the mode the experiments measure. The host owns the loop; the server owns the prompt and the validator.
+The host owns the loop; the server owns the prompt and the validator.
 
 ```mermaid
 sequenceDiagram
@@ -126,26 +122,3 @@ might skip the tool, so the host validates the model's final text again before t
 the only thing that makes the result safe, and it's why the architecture spike said "MCP provides tool integration,
 not an automatic type guarantee." [market-landscape.md](market-landscape.md#what-mcp-provides-natively) covers what
 the MCP spec does and doesn't promise.
-
-## 4. Experiment harness
-
-```mermaid
-flowchart TB
-    cases["experiments/cases/cases.json<br/>42 cases · identical responses for every track"]
-    kt["kotlin-library/bench<br/>BenchRunner"]
-    pyc["mcp-server bench runner<br/>--track python-core"]
-    pym["mcp-server bench runner<br/>--track mcp-server"]
-    bsrv["bench MCP server<br/>same validator, benchmark schemas"]
-    res["experiments/results/*.jsonl<br/>one shared record format"]
-    cmp["experiments/compare.py"]
-    rep["REPORT.md"]
-    sch["experiments/schemas/<br/>kotlin vs python"]
-    cases --> kt & pyc & pym
-    pym <-->|stdio MCP| bsrv
-    kt & pyc & pym --> res
-    kt & pyc -->|--schemas-out| sch
-    res & sch --> cmp --> rep
-```
-
-The benchmark types are written in both languages with identical fields and rules. `compare.py` diffs the schemas
-both sides generate, so an outcome difference can be traced to the library rather than to mismatched types.

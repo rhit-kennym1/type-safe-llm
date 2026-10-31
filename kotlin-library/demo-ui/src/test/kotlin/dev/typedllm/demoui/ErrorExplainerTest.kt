@@ -35,6 +35,12 @@ class ErrorExplainerTest {
     }
 
     @Test
+    fun `duplicate field`() {
+        val text = """{"title":"Lunch","title":"Dinner","date":"Fri","attendees":[]}"""
+        assertEquals("Gives the same field twice: title", explain(OutputFormat.JSON, text))
+    }
+
+    @Test
     fun `plain text`() {
         assertEquals("Plain text instead of structured data", explain(OutputFormat.JSON, "Sure! Lunch on Friday."))
     }
@@ -42,6 +48,14 @@ class ErrorExplainerTest {
     @Test
     fun `missing field in YAML`() {
         assertEquals("Missing the date", explain(OutputFormat.YAML, "title: Lunch\nattendees: []"))
+    }
+
+    @Test
+    fun `names the check that failed`() {
+        assertEquals("Missing field", ErrorExplainer.check(errorFrom(OutputFormat.JSON, """{"title":"Lunch","attendees":[]}""")))
+        assertEquals("Unknown field", ErrorExplainer.check(errorFrom(OutputFormat.JSON, """{"title":"L","date":"F","attendees":[],"mood":"x"}""")))
+        assertEquals("JSON syntax", ErrorExplainer.check(errorFrom(OutputFormat.JSON, "Sure! Lunch on Friday.")))
+        assertEquals("Type or value", ErrorExplainer.check(errorFrom(OutputFormat.JSON, """{"title":"L","date":"F","attendees":"dana"}""")))
     }
 
     @Test
