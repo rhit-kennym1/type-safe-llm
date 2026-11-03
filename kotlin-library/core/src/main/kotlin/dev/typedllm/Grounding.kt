@@ -331,8 +331,8 @@ internal object Evidence {
 
     /**
      * Finds [quote] in [source]. Models often copy a quote with small differences, so a quote of 12+ characters
-     * also matches a stretch of the source that is at least 90% the same (by edit distance). Sources over 5,000
- * characters only get exact matching, to keep the scan cheap.
+     * also matches the stretch of the source closest to it by edit distance, if that stretch is at least 90% the
+     * same. Sources over 5,000 characters only get exact matching, to keep the scan cheap.
      */
     fun locate(quote: String, source: String): Match? {
         val q = normalize(quote)
@@ -340,13 +340,30 @@ internal object Evidence {
         if (q.isEmpty()) return null
         if (q in s) return Match(q, 1.0)
         if (q.length < 12 || s.length > 5_000) return null
-        val best = (0..maxOf(0, s.length - q.length)).maxBy { similarity(q, s.substring(it, minOf(s.length, it + q.length))) }
-        val spread = maxOf(2, q.length / 10)
-        return (q.length - spread..q.length + spread)
-            .mapNotNull { len -> s.substring(best, minOf(s.length, best + len)).takeIf { it.isNotEmpty() } }
-            .map { Match(it, similarity(q, it)) }
-            .maxBy { it.score }
-            .takeIf { it.score >= 0.9 }
+        // Approximate substring search (Sellers): edit distance from the quote to the best-matching stretch of the
+        // source, where that stretch may start and end anywhere. start[j] tracks where the stretch ending at j began.
+        var dist = IntArray(s.length + 1)
+        var start = IntArray(s.length + 1) { it }
+        for (i in 1..q.length) {
+            val d = IntArray(s.length + 1).also { it[0] = i }
+            val st = IntArray(s.length + 1)
+            for (j in 1..s.length) {
+                val replace = dist[j - 1] + if (q[i - 1] == s[j - 1]) 0 else 1
+                val dropQuoteChar = dist[j] + 1
+                val skipSourceChar = d[j - 1] + 1
+                d[j] = minOf(replace, dropQuoteChar, skipSourceChar)
+                st[j] = when (d[j]) {
+                    replace -> start[j - 1]
+                    dropQuoteChar -> start[j]
+                    else -> st[j - 1]
+                }
+            }
+            dist = d
+            start = st
+        }
+        val end = (1..s.length).minBy { dist[it] }
+        val text = s.substring(start[end], end).trim()
+        return Match(text, 1.0 - dist[end].toDouble() / maxOf(q.length, text.length)).takeIf { it.score >= 0.9 }
     }
 
     /** The value to pass on (possibly corrected), why it isn't supported if it isn't, and a note on how it was. */
@@ -421,8 +438,6 @@ internal object Evidence {
         }
         return prev[b.length]
     }
-
-    private fun similarity(a: String, b: String): Double = 1.0 - distance(a, b).toDouble() / maxOf(a.length, b.length)
 
     fun valueInQuote(value: JsonElement, field: PlanField, quote: String): Boolean = when (field.kind) {
         ValueKind.STRING -> (value as? JsonPrimitive)?.contentOrNull?.let { stringInQuote(it, quote) } ?: true

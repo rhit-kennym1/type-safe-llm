@@ -161,6 +161,14 @@ class SafeguardsTest {
     }
 
     @Test
+    fun `a quote that drops a word near its start still matches the right stretch of the source`() {
+        val src = "hey all, moving the capstone sync to friday oct 30 at 2pm in moench hall F-217."
+        val match = Evidence.locate("moving capstone sync to friday oct 30", src)!!
+        assertEquals("moving the capstone sync to friday oct 30", match.text)
+        assertEquals(37.0 / 41, match.score, 1e-9)
+    }
+
+    @Test
     fun `a value with the same typo as its quote is corrected to the source's spelling`() {
         val src = "moving the capstone sync to friday oct 30 at 2pm in moench hall F-217."
         val field = PlanField("location", JsonObject(emptyMap()), required = false, nullable = true, ValueKind.STRING, null, null)
