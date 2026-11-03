@@ -34,8 +34,8 @@ internal data class PlanField(
 internal data class Unwrapped(val plain: JsonObject, val fields: List<FieldReport>, val missingRequired: List<String>)
 
 /**
- * Grounded extraction: asks the model for one small object per field (quote, status, value) instead of the plain
- * type, then turns the answer back into the plain type while checking each value against the source text.
+ * Grounded extraction: asks the model for one small object per field (quote and value, plus a status when there are
+ * no quotes) instead of the plain type, then turns the answer back into the plain type while checking each value against the source text.
  * Works on JSON Schema only, so nothing here depends on Kotlin types.
  * Applies to the top-level fields of an object type; nested objects are treated as one value each.
  */
@@ -45,6 +45,7 @@ internal object Grounding {
     const val VALUE = "value"
     const val FOUND = "found"
     const val MISSING = "missing"
+    const val QUOTED_NO_VALUE = "quoted source text but gave no value"
 
     /** The top-level fields of [schema], or null when the root isn't an object with properties (lists, sealed roots). */
     fun fields(schema: JsonObject): List<PlanField>? {
@@ -88,7 +89,7 @@ internal object Grounding {
                 put("type", "string")
                 put("description", "The exact words copied from the source that state this value. Empty if the source does not state it.")
             }
-            if (safeguards.allowMissing) putJsonObject(STATUS) {
+            if (usesStatus(safeguards)) putJsonObject(STATUS) {
                 put("type", "string")
                 putJsonArray("enum") { add(FOUND); add(MISSING) }
             }
@@ -100,7 +101,7 @@ internal object Grounding {
         }
         putJsonArray("required") {
             if (safeguards.requireEvidence) add(QUOTE)
-            if (safeguards.allowMissing) add(STATUS)
+            if (usesStatus(safeguards)) add(STATUS)
             add(VALUE)
         }
         put("additionalProperties", false)
@@ -110,10 +111,18 @@ internal object Grounding {
     fun instructions(safeguards: Safeguards): String = buildString {
         append("Each field of the result is an object. ")
         if (safeguards.requireEvidence) append("\"quote\" holds the exact words copied from the source that state the value, written first. ")
-        if (safeguards.allowMissing) append("\"status\" is \"found\" or \"missing\". ")
+        if (usesStatus(safeguards)) append("\"status\" is \"found\" or \"missing\". ")
         append("\"value\" holds the field's value. ")
-        if (safeguards.allowMissing) append("If the source does not state a field, set status to \"missing\" and value to null. Never guess or invent a value.")
+        if (safeguards.allowMissing) {
+            append("A field is stated if the source gives it in any words, even informally (\"lunch\" can be a title). ")
+            if (safeguards.requireEvidence) append("Only if nothing in the source states a field, leave its quote empty and set value to null. ")
+            else append("Only if nothing in the source states a field, set status to \"missing\" and value to null. ")
+            append("Don't invent values.")
+        }
     }.trim()
+
+    /** With evidence quotes, an empty quote already means "missing", so the model isn't asked for a separate status. */
+    private fun usesStatus(safeguards: Safeguards) = safeguards.allowMissing && !safeguards.requireEvidence
 
     /**
      * Turns a grounded answer into plain JSON and a per-field report. Throws IllegalArgumentException for structural
@@ -141,7 +150,7 @@ internal object Grounding {
             val extra = envelope.keys - expectedKeys(safeguards).toSet()
             require(extra.isEmpty()) { "Field '${field.name}' has unexpected key(s): ${extra.joinToString()}." }
 
-            val status = if (safeguards.allowMissing) {
+            val status = if (usesStatus(safeguards)) {
                 val s = (envelope[STATUS] as? JsonPrimitive)?.contentOrNull
                 require(s == FOUND || s == MISSING) { "Field '${field.name}' needs status \"found\" or \"missing\"." }
                 s
@@ -149,19 +158,26 @@ internal object Grounding {
             val value = envelope[VALUE] ?: JsonNull
             val quote = if (safeguards.requireEvidence) (envelope[QUOTE] as? JsonPrimitive)?.contentOrNull.orEmpty() else null
 
-            val markedMissing = safeguards.allowMissing && (status == MISSING || (value is JsonNull && !field.nullable))
+            // With quotes, a null value means missing; a quote that is real source text then contradicts it.
+            val markedMissing = safeguards.allowMissing && (status == MISSING || value is JsonNull)
             if (markedMissing) {
                 recordMissing(field, plain, missingRequired)
-                reports += FieldReport(field.name, FieldStatus.MISSING, quote = quote?.ifBlank { null })
+                val quoted = quote?.let { Evidence.locate(it, source) }?.text
+                reports += FieldReport(field.name, FieldStatus.MISSING, quote = quote?.ifBlank { null },
+                    note = quoted?.let { QUOTED_NO_VALUE })
                 continue
             }
 
-            plain[field.name] = value
-            reports += if (quote == null) {
-                FieldReport(field.name, FieldStatus.FOUND, value)
+            if (quote == null) {
+                plain[field.name] = value
+                reports += FieldReport(field.name, FieldStatus.FOUND, value)
             } else {
-                val (problem, note) = Evidence.check(value, field, quote, source)
-                FieldReport(field.name, if (problem == null) FieldStatus.FOUND else FieldStatus.UNVERIFIED, value, quote.ifBlank { null }, problem ?: note)
+                val result = Evidence.check(value, field, quote, source)
+                plain[field.name] = result.value
+                reports += FieldReport(
+                    field.name, if (result.problem == null) FieldStatus.FOUND else FieldStatus.UNVERIFIED,
+                    result.value, quote.ifBlank { null }, result.problem ?: result.note,
+                )
             }
         }
         return Unwrapped(JsonObject(plain), reports, missingRequired)
@@ -177,7 +193,7 @@ internal object Grounding {
 
     private fun expectedKeys(safeguards: Safeguards) = buildList {
         if (safeguards.requireEvidence) add(QUOTE)
-        if (safeguards.allowMissing) add(STATUS)
+        if (usesStatus(safeguards)) add(STATUS)
         add(VALUE)
     }
 
@@ -264,6 +280,11 @@ internal object Grounding {
 internal object Evidence {
     private val MONTHS = listOf("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december")
     private val ISO_DATE = Regex("""^(\d{4})-(\d{2})-(\d{2})$""")
+    // Free-text dates a model may write as the value: "october 30", "friday oct 30th, 2026", "30 oct", "10/30/2026".
+    private val MONTH_DAY = Regex("""^(?:[a-z]+,?\s+)?([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?$""")
+    private val DAY_MONTH = Regex("""^(?:[a-z]+,?\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]{3,9})\.?(?:,?\s+(\d{4}))?$""")
+    private val NUMERIC_DATE = Regex("""^(\d{1,2})/(\d{1,2})(?:/(\d{4}))?$""")
+    private val YEAR = Regex("""(?<!\d)(19|20)\d{2}(?!\d)""")
     private val TIME = Regex("""^(\d{1,2}):(\d{2})$""")
     private val NUMBER = Regex("""-?\d[\d,]*(?:\.\d+)?""")
     private val WORD = Regex("""[\p{L}\p{N}]+""")
@@ -328,26 +349,80 @@ internal object Evidence {
             .takeIf { it.score >= 0.9 }
     }
 
+    /** The value to pass on (possibly corrected), why it isn't supported if it isn't, and a note on how it was. */
+    data class Checked(val value: JsonElement, val problem: String?, val note: String?)
+
     /**
-     * Why a found value isn't supported (first), and a note on how it was supported (second). The value is
-     * checked against the matching source text, not the model's copy, so a misquoted number can't slip through.
+     * Checks [value] against the source text its quote matched, not the model's copy, so a misquoted number
+     * can't slip through. When the quote matched approximately, words the value repeats from the model's quote
+     * are first replaced with the source's spelling ("moech hall" -> "moench hall").
      */
-    fun check(value: JsonElement, field: PlanField, quote: String, source: String): Pair<String?, String?> {
-        if (quote.isBlank()) return "no quote given" to null
-        val match = locate(quote, source) ?: return "quote not found in the source" to null
-        if (!valueInQuote(value, field, match.text)) return "value doesn't appear in its quote" to null
-        return null to if (match.score < 1.0) "quote matched the source approximately (${(match.score * 100).toInt()}%)" else null
+    fun check(value: JsonElement, field: PlanField, quote: String, source: String): Checked {
+        if (quote.isBlank()) return Checked(value, "no quote given", null)
+        val match = locate(quote, source) ?: return Checked(value, "quote not found in the source", null)
+        val corrected = if (match.score < 1.0) correctSpelling(value, wordFixes(normalize(quote), match.text)) else value
+        if (!valueInQuote(corrected, field, match.text)) return Checked(value, "value doesn't appear in its quote", null)
+        val note = when {
+            corrected != value -> "corrected to the source's spelling (model wrote $value)"
+            match.score < 1.0 -> "quote matched the source approximately (${(match.score * 100).toInt()}%)"
+            else -> null
+        }
+        return Checked(corrected, null, note)
     }
 
-    private fun similarity(a: String, b: String): Double {
+    /**
+     * Pairs of (model's word, source's word) where the model's quote misspelled a source word. Words are aligned
+     * in order; only words without digits can pair, so "F-218" is never read as "F-217".
+     */
+    private fun wordFixes(modelQuote: String, sourceText: String): Map<String, String> {
+        val a = WORD.findAll(modelQuote).map { it.value }.toList()
+        val b = WORD.findAll(sourceText).map { it.value }.toList()
+        fun close(x: String, y: String) = x != y && x.none(Char::isDigit) && y.none(Char::isDigit) &&
+            minOf(x.length, y.length) >= 3 && distance(x, y) <= if (maxOf(x.length, y.length) >= 8) 2 else 1
+        // Word-level edit distance: keeping a word costs 0, fixing a misspelled one 1, anything else 2.
+        val cost = Array(a.size + 1) { i -> IntArray(b.size + 1) { j -> if (i == 0) j * 2 else if (j == 0) i * 2 else 0 } }
+        for (i in 1..a.size) for (j in 1..b.size) {
+            val pair = if (a[i - 1] == b[j - 1]) 0 else if (close(a[i - 1], b[j - 1])) 1 else 4
+            cost[i][j] = minOf(cost[i - 1][j - 1] + pair, cost[i - 1][j] + 2, cost[i][j - 1] + 2)
+        }
+        val fixes = mutableMapOf<String, String>()
+        var i = a.size
+        var j = b.size
+        while (i > 0 && j > 0) {
+            val pair = if (a[i - 1] == b[j - 1]) 0 else if (close(a[i - 1], b[j - 1])) 1 else 4
+            when (cost[i][j]) {
+                cost[i - 1][j - 1] + pair -> { if (pair == 1) fixes[a[i - 1]] = b[j - 1]; i--; j-- }
+                cost[i - 1][j] + 2 -> i--
+                else -> j--
+            }
+        }
+        return fixes
+    }
+
+    /** Replaces misspelled words in a text value (or each item of a text list), keeping a leading capital. */
+    private fun correctSpelling(value: JsonElement, fixes: Map<String, String>): JsonElement {
+        if (fixes.isEmpty()) return value
+        fun fix(text: String) = WORD.replace(text) { m ->
+            fixes[m.value.lowercase()]?.let { if (m.value[0].isUpperCase()) it.replaceFirstChar(Char::uppercase) else it } ?: m.value
+        }
+        return when {
+            value is JsonPrimitive && value.isString -> JsonPrimitive(fix(value.content))
+            value is JsonArray -> JsonArray(value.map { if (it is JsonPrimitive && it.isString) JsonPrimitive(fix(it.content)) else it })
+            else -> value
+        }
+    }
+
+    private fun distance(a: String, b: String): Int {
         var prev = IntArray(b.length + 1) { it }
         for (i in 1..a.length) {
             val cur = IntArray(b.length + 1).also { it[0] = i }
             for (j in 1..b.length) cur[j] = minOf(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1)
             prev = cur
         }
-        return 1.0 - prev[b.length].toDouble() / maxOf(a.length, b.length)
+        return prev[b.length]
     }
+
+    private fun similarity(a: String, b: String): Double = 1.0 - distance(a, b).toDouble() / maxOf(a.length, b.length)
 
     fun valueInQuote(value: JsonElement, field: PlanField, quote: String): Boolean = when (field.kind) {
         ValueKind.STRING -> (value as? JsonPrimitive)?.contentOrNull?.let { stringInQuote(it, quote) } ?: true
@@ -364,7 +439,7 @@ internal object Evidence {
         val q = normalize(quote)
         if (v.isEmpty() || v in q) return true
         CURRENCIES[value.trim().uppercase()]?.let { names -> if (names.any { it in q }) return true }
-        ISO_DATE.matchEntire(value.trim())?.let { m -> return dateInQuote(m.groupValues[2].toInt(), m.groupValues[3].toInt(), q) }
+        parseDate(v)?.let { (year, month, day) -> return dateInQuote(year, month, day, q) }
         TIME.matchEntire(value.trim())?.let { m -> return timeInQuote(m.groupValues[1].toInt(), m.groupValues[2].toInt(), q) }
         val quoteWords = WORD.findAll(q).map { it.value }.toSet()
         val valueWords = WORD.findAll(v).map { it.value }.toList()
@@ -397,9 +472,24 @@ internal object Evidence {
         return found
     }
 
-    /** A date in the quote written with the same day and month, e.g. "2026-11-04" matches "Nov 4", "4 November", "11/4". */
-    private fun dateInQuote(month: Int, day: Int, q: String): Boolean {
+    /** (year or null, month, day) for an ISO or free-text date value, or null if [v] isn't a date. */
+    private fun parseDate(v: String): Triple<Int?, Int, Int>? {
+        fun month(word: String) = MONTHS.indexOfFirst { it.startsWith(word) } + 1
+        ISO_DATE.matchEntire(v)?.let { m -> return Triple(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()) }
+        MONTH_DAY.matchEntire(v)?.let { m -> month(m.groupValues[1]).takeIf { it > 0 }?.let { return Triple(m.groupValues[3].toIntOrNull(), it, m.groupValues[2].toInt()) } }
+        DAY_MONTH.matchEntire(v)?.let { m -> month(m.groupValues[2]).takeIf { it > 0 }?.let { return Triple(m.groupValues[3].toIntOrNull(), it, m.groupValues[1].toInt()) } }
+        NUMERIC_DATE.matchEntire(v)?.let { m -> return Triple(m.groupValues[3].toIntOrNull(), m.groupValues[1].toInt(), m.groupValues[2].toInt()) }
+        return null
+    }
+
+    /**
+     * A date in the quote written with the same day and month, e.g. "2026-11-04" matches "Nov 4", "4 November", "11/4".
+     * The year is compared only when both the value and the quote have one.
+     */
+    private fun dateInQuote(year: Int?, month: Int, day: Int, q: String): Boolean {
         if (month !in 1..12) return false
+        val years = YEAR.findAll(q).map { it.value.toInt() }.toList()
+        if (year != null && years.isNotEmpty() && year !in years) return false
         val name = MONTHS[month - 1]
         val dayToken = Regex("""(?<!\d)0?$day(?:st|nd|rd|th)?(?!\d)""")
         val hasMonthName = Regex("""\b${name.take(3)}[a-z]*\.?""").containsMatchIn(q)

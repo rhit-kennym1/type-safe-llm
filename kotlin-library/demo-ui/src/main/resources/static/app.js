@@ -272,7 +272,8 @@ function renderSent(result) {
   } else {
     text = `Sent to ${result.model}. The schema went only into the system message. Nothing forces the model to follow it, so every answer is checked.`;
   }
-  if (grounded) text += " Safeguards changed the schema: each field is now a small object (quote, status, value), so the model can say \"missing\" and must show where each value came from.";
+  if (sg.requireEvidence) text += " Safeguards changed the schema: each field is now a small object (quote, value), so the model must show where each value came from" + (sg.allowMissing ? "; an empty quote means the field is missing." : ".");
+  else if (grounded) text += " Safeguards changed the schema: each field is now a small object (status, value), so the model can say \"missing\".";
   note.textContent = text;
   note.hidden = false;
   byId("sent-messages").replaceChildren(...(first?.sent ?? []).map(messageItem));

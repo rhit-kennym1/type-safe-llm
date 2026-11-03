@@ -152,7 +152,7 @@ class TypedLLM(
 
     /** One usable answer: the plain JSON, the decoded value (null when required fields are missing), and its field report. */
     private class Candidate<T>(val plain: JsonObject, val value: T?, val fields: List<FieldReport>, val missingRequired: List<String>) {
-        fun hasIssues() = missingRequired.isNotEmpty() || fields.any { it.status == FieldStatus.UNVERIFIED }
+        fun hasIssues() = missingRequired.isNotEmpty() || fields.any { it.status == FieldStatus.UNVERIFIED || it.note == Grounding.QUOTED_NO_VALUE }
     }
 
     private sealed interface Step<out T> {
@@ -195,11 +195,17 @@ class TypedLLM(
             append("You marked these required fields as missing: ${candidate.missingRequired.joinToString()}. ")
             append("Read the source again. If it states them, give the exact quote and the value. If it does not, keep them missing. Do not guess.\n")
         }
+        val quotedButEmpty = candidate.fields.filter { it.note == Grounding.QUOTED_NO_VALUE }
+        if (quotedButEmpty.isNotEmpty()) {
+            append("You quoted source text but gave no value for: ")
+            append(quotedButEmpty.joinToString { "${it.name} (\"${it.quote}\")" })
+            append(". If that text states the value, give the value.\n")
+        }
         val unsupported = candidate.fields.filter { it.status == FieldStatus.UNVERIFIED }
         if (unsupported.isNotEmpty()) {
             append("These values are not supported by the source: ")
             append(unsupported.joinToString { "${it.name} (${it.note})" })
-            append(". Copy the exact words from the source that state each value, or mark the field missing if the source does not state it.\n")
+            append(". Copy the exact words from the source that state each value, or leave the quote empty and the value null if the source does not state it.\n")
         }
         append("Respond again with ONLY the complete JSON document.")
     }

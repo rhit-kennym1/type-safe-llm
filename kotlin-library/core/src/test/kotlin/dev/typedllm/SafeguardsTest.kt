@@ -24,16 +24,18 @@ class SafeguardsTest {
     private val plainValid = """{"title":"Design review","date":"2026-11-04","time":"14:00","attendees":8}"""
 
     private fun envelope(vararg fields: Pair<String, String>) = fields.joinToString(",", "{", "}") { (k, v) -> "\"$k\":$v" }
-    private fun found(quote: String, value: String) = """{"quote":${JsonPrimitive(quote)},"status":"found","value":$value}"""
-    private val missing = """{"quote":"","status":"missing","value":null}"""
+    private fun found(quote: String, value: String) = """{"quote":${JsonPrimitive(quote)},"value":$value}"""
+    private val missing = """{"quote":"","value":null}"""
 
     @Test
-    fun `envelope asks for quote first, then status, then a nullable value`() {
+    fun `envelope asks for the quote first, then a nullable value, with no separate status`() {
         val schema = SchemaGenerator.generate(serializer<Meeting>().descriptor)
         val fields = Grounding.fields(schema)!!
         val env = Grounding.envelope(schema, fields, Safeguards(allowMissing = true, requireEvidence = true))
         val date = env["properties"]!!.jsonObject["date"]!!.jsonObject
-        assertEquals(listOf("quote", "status", "value"), date["properties"]!!.jsonObject.keys.toList())
+        assertEquals(listOf("quote", "value"), date["properties"]!!.jsonObject.keys.toList())
+        val withoutQuotes = Grounding.envelope(schema, fields, Safeguards(allowMissing = true))["properties"]!!.jsonObject["date"]!!.jsonObject
+        assertEquals(listOf("status", "value"), withoutQuotes["properties"]!!.jsonObject.keys.toList())
         val anyOf = date["properties"]!!.jsonObject["value"]!!.jsonObject["anyOf"]!!.jsonArray
         assertEquals("null", anyOf[1].jsonObject["type"]!!.jsonPrimitive.content)
         assertEquals(listOf("title", "date", "time", "attendees", "room"), env["required"]!!.jsonArray.map { it.jsonPrimitive.content })
@@ -75,6 +77,21 @@ class SafeguardsTest {
     }
 
     @Test
+    fun `a field quoted from the source but left empty is noted and named in the follow-up`() = runTest {
+        val src = "Design review at 2pm, 8 people."
+        val contradicting = envelope(
+            "title" to """{"quote":"Design review","value":null}""", "date" to missing, "time" to found("2pm", "\"14:00\""),
+            "attendees" to found("8 people", "8"), "room" to missing,
+        )
+        val provider = FakeProvider(contradicting, contradicting)
+        val r = TypedLLM(provider).extract<Meeting>("extract", src, Safeguards(allowMissing = true, requireEvidence = true, targetedRetry = true))
+        assertIs<Extraction.Incomplete>(r)
+        assertEquals(Grounding.QUOTED_NO_VALUE, r.fields.first { it.name == "title" }.note)
+        assertNull(r.fields.first { it.name == "date" }.note, "an empty quote is a plain missing")
+        assertTrue(provider.received[1].messages.last().content.contains("title (\"Design review\")"))
+    }
+
+    @Test
     fun `a quote that isn't in the source flags the value as unverified`() = runTest {
         val answer = envelope(
             "title" to found("Design review", "\"Design review\""), "date" to found("on November 12", "\"2026-11-12\""),
@@ -104,6 +121,13 @@ class SafeguardsTest {
         assertTrue(Evidence.stringInQuote("2026-11-04", "4th November"))
         assertTrue(Evidence.stringInQuote("2026-11-04", "due 11/4"))
         assertFalse(Evidence.stringInQuote("2026-11-04", "Nov 14"))
+        assertTrue(Evidence.stringInQuote("october 30", "friday oct 30 at 2pm"))
+        assertTrue(Evidence.stringInQuote("Oct 30th, 2026", "friday oct 30"))
+        assertTrue(Evidence.stringInQuote("30 October", "due 10/30"))
+        assertTrue(Evidence.stringInQuote("10/30", "friday oct 30"))
+        assertFalse(Evidence.stringInQuote("october 31", "friday oct 30"))
+        assertFalse(Evidence.stringInQuote("2026-10-30", "oct 30, 2025"))
+        assertTrue(Evidence.stringInQuote("room 12", "in room 12"), "words that aren't months are still plain text")
         assertTrue(Evidence.stringInQuote("14:00", "at 2pm"))
         assertTrue(Evidence.stringInQuote("14:30", "2:30 p.m."))
         assertTrue(Evidence.stringInQuote("12:00", "lunch at noon"))
@@ -129,11 +153,24 @@ class SafeguardsTest {
         // 97% like the source, but the source says the 14th, so the 4th isn't supported.
         assertTrue(Evidence.locate("The kickoff is on Nov 4 at noon in room B", src)!!.score >= 0.9)
         val field = PlanField("date", JsonObject(emptyMap()), required = true, nullable = false, ValueKind.STRING, null, null)
-        assertEquals("value doesn't appear in its quote", Evidence.check(JsonPrimitive("2026-11-04"), field, "The kickoff is on Nov 4 at noon", src).first)
-        val (problem, note) = Evidence.check(JsonPrimitive("2026-11-14"), field, "The kickoff is on Nov. 14 at noon", src)
-        assertNull(problem)
-        assertEquals("quote matched the source approximately (96%)", note)
+        assertEquals("value doesn't appear in its quote", Evidence.check(JsonPrimitive("2026-11-04"), field, "The kickoff is on Nov 4 at noon", src).problem)
+        val ok = Evidence.check(JsonPrimitive("2026-11-14"), field, "The kickoff is on Nov. 14 at noon", src)
+        assertNull(ok.problem)
+        assertEquals("quote matched the source approximately (96%)", ok.note)
         assertNull(Evidence.locate("a completely different sentence", src))
+    }
+
+    @Test
+    fun `a value with the same typo as its quote is corrected to the source's spelling`() {
+        val src = "moving the capstone sync to friday oct 30 at 2pm in moench hall F-217."
+        val field = PlanField("location", JsonObject(emptyMap()), required = false, nullable = true, ValueKind.STRING, null, null)
+        val fixed = Evidence.check(JsonPrimitive("Moech hall F-217"), field, "moech hall F-217", src)
+        assertNull(fixed.problem)
+        assertEquals(JsonPrimitive("Moench hall F-217"), fixed.value)
+        assertEquals("corrected to the source's spelling (model wrote \"Moech hall F-217\")", fixed.note)
+        // Digits are never corrected: a wrong room number is still flagged.
+        val wrongRoom = Evidence.check(JsonPrimitive("moench hall F-218"), field, "moench hall F-218", src)
+        assertEquals("value doesn't appear in its quote", wrongRoom.problem)
     }
 
     @Test

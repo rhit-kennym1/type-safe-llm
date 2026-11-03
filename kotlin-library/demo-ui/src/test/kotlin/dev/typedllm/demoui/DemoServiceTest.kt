@@ -117,7 +117,7 @@ class DemoServiceTest {
     @Test
     fun `with safeguards a gap in the prompt comes back as missing instead of invented`() = runBlocking {
         val prompt = "Extract the event.\n\nLunch with dana and luis, place TBD"
-        replies += """{"title":{"quote":"Lunch","status":"found","value":"Lunch"},"date":{"quote":"","status":"missing","value":null},"location":{"quote":"","status":"missing","value":null},"attendees":{"quote":"dana and luis","status":"found","value":["dana","luis"]}}"""
+        replies += """{"title":{"quote":"Lunch","value":"Lunch"},"date":{"quote":"","value":null},"location":{"quote":"","value":null},"attendees":{"quote":"dana and luis","value":["dana","luis"]}}"""
 
         val result = service().runLive(prompt, "prompt-only", "event", SafeguardsView(allowMissing = true, requireEvidence = true))!!
 
@@ -129,11 +129,11 @@ class DemoServiceTest {
     @Test
     fun `grounded live run sends the field envelope and checks quotes against the source`() = runBlocking {
         val prompt = "Extract the order.\n\nOrder ORD-7 total 12.5 paid cash"
-        replies += """{"id":{"quote":"Order ORD-7","status":"found","value":"ORD-7"},"total":{"quote":"total 99","status":"found","value":99},"payment":{"quote":"paid cash","status":"found","value":{"type":"cash"}}}"""
+        replies += """{"id":{"quote":"Order ORD-7","value":"ORD-7"},"total":{"quote":"total 99","value":99},"payment":{"quote":"paid cash","value":{"type":"cash"}}}"""
 
         val result = service().runLive(prompt, "prompt-only", "order", SafeguardsView(allowMissing = true, requireEvidence = true))!!
 
-        assertTrue(messagesOf(requests.single()).first().second.contains("\"status\" is \"found\" or \"missing\""))
+        assertTrue(messagesOf(requests.single()).first().second.contains("leave its quote empty"))
         val outcome = assertIs<Outcome.Unverified>(result.outcome)
         assertEquals(listOf("total"), outcome.flagged)
         assertEquals("quote not found in the source", result.fields.first { it.name == "total" }.note)
