@@ -1,7 +1,7 @@
 # Type-Safe LLM
 
-This senior capstone explores two approaches to structured LLM output: an
-application library and a discoverable MCP validation server.
+This senior capstone employs one approach to structured LLM output: an
+application library.
 
 | Approach | Folder | Documentation |
 | --- | --- | --- |
