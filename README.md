@@ -9,7 +9,18 @@ application library and a discoverable MCP validation server.
 | Python MCP server and presentation demo | `mcp-server/` | [MCP setup](mcp-server/README.md) |
 
 The approaches have separate source code, tests, build configuration, and demos.
-Project design documents are in [background-information/](background-information/).
+
+## Design documents
+
+| Document | Covers |
+| --- | --- |
+| [Design document v2](background-information/design-document-v2.md) | Current design, results, open questions |
+| [Architecture](background-information/architecture.md) | Diagrams of both approaches |
+| [Design decisions](background-information/design-decisions.md) | Why each choice was made |
+| [Market landscape](background-information/market-landscape.md) | Existing tools and what MCP provides natively |
+| [Deliverables audit](background-information/deliverables-audit.md) | Status of every commitment, by track |
+
+The original design document and architecture spike are kept in the same folder.
 
 ## Run the MCP demo
 

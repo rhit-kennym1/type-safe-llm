@@ -68,13 +68,45 @@ class DemoApiTest {
     }
 
     @Test
+    fun `targets catalogue includes event, thread, and order`() = testApplication {
+        start()
+        val body = client.get("/api/targets").bodyAsText()
+        assertTrue(body.contains("\"id\":\"event\""))
+        assertTrue(body.contains("\"id\":\"thread\""))
+        assertTrue(body.contains("\"id\":\"order\""))
+        assertTrue(body.contains("\"id\":\"contract\""))
+    }
+
+    @Test
+    fun `recursive scenario decodes a nested thread`() = testApplication {
+        val result = runScenario("thread-nested").result()
+        assertEquals(listOf(true), result.attempts.map { it.accepted })
+        assertIs<Outcome.Success>(result.outcome)
+    }
+
+    @Test
+    fun `polymorphic scenario fixes a missing discriminator`() = testApplication {
+        val result = runScenario("pay-missing-type").result()
+        // First attempt fails because the oneOf schema can't pick a branch; second attempt succeeds.
+        assertEquals(listOf(false, true), result.attempts.map { it.accepted })
+        assertIs<Outcome.Success>(result.outcome)
+    }
+
+    @Test
     fun `live run with an empty message is rejected`() = testApplication {
-        assertEquals(HttpStatusCode.BadRequest, runLive("""{"message":"  ","modelId":"enforced"}""").status)
+        assertEquals(HttpStatusCode.BadRequest, runLive("""{"prompt":"  ","modelId":"enforced"}""").status)
+    }
+
+    @Test
+    fun `live run with an unknown class is rejected`() = testApplication {
+        val response = runLive("""{"prompt":"lunch friday?","modelId":"enforced","targetId":"spaceship"}""")
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertTrue(response.bodyAsText().contains("spaceship"))
     }
 
     @Test
     fun `live run reports an unreachable provider`() = testApplication {
-        val response = runLive("""{"message":"lunch friday?","modelId":"enforced"}""")
+        val response = runLive("""{"prompt":"lunch friday?","modelId":"enforced","targetId":"order"}""")
         assertEquals(HttpStatusCode.BadGateway, response.status)
         assertTrue(response.bodyAsText().contains("Could not reach"))
     }

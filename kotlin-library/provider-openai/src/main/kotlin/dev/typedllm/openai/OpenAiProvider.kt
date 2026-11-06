@@ -1,8 +1,10 @@
 package dev.typedllm.openai
 
+import dev.typedllm.Completion
 import dev.typedllm.CompletionRequest
 import dev.typedllm.Provider
 import dev.typedllm.ProviderException
+import dev.typedllm.TokenUsage
 import kotlinx.coroutines.future.await
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -28,9 +30,15 @@ class OpenAiProvider(
     private val baseUrl: String = DEFAULT_BASE_URL,
     private val timeout: Duration = Duration.ofSeconds(60),
     private val http: HttpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build(),
+    /** Sampling temperature; null leaves it unset so the provider's default applies. */
+    private val temperature: Double? = null,
 ) : Provider {
 
-    override suspend fun complete(request: CompletionRequest): String {
+    override val id: String = "openai-compatible:$model"
+
+    override suspend fun complete(request: CompletionRequest): String = completeWithUsage(request).text
+
+    override suspend fun completeWithUsage(request: CompletionRequest): Completion {
         val body = wireJson.encodeToString(toChatRequest(request))
         val httpRequest = HttpRequest.newBuilder(URI.create("${baseUrl.trimEnd('/')}/chat/completions"))
             .timeout(timeout)
@@ -60,14 +68,17 @@ class OpenAiProvider(
             model = model,
             messages = request.messages.map { ChatMessage(it.role.name.lowercase(), it.content) },
             responseFormat = strictSchema?.let { ResponseFormat(jsonSchema = JsonSchemaSpec(schema = it)) },
+            temperature = temperature,
         )
     }
 
-    private fun extractContent(body: String): String {
-        val message = wireJson.decodeFromString<ChatResponse>(body).choices.firstOrNull()?.message
+    private fun extractContent(body: String): Completion {
+        val response = wireJson.decodeFromString<ChatResponse>(body)
+        val message = response.choices.firstOrNull()?.message
             ?: throw ProviderException("The response had no choices")
         message.refusal?.let { throw ProviderException("Model refused: $it") }
-        return message.content ?: throw ProviderException("The response had no content")
+        val text = message.content ?: throw ProviderException("The response had no content")
+        return Completion(text, response.usage?.let { TokenUsage(it.promptTokens, it.completionTokens) })
     }
 
     companion object {

@@ -163,6 +163,16 @@ h2 {
 
 #message-input { font-size: 1.05rem; margin: 0; }
 
+.target-heading {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+
+.target-note {
+  margin: 0 0 0.75rem;
+}
+
 .fields {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -174,7 +184,10 @@ h2 {
 
 .code summary { font-size: 0.95rem; color: var(--muted); }
 .code p { margin: 0.9rem 0 0.35rem; font-size: 0.9rem; color: var(--muted); }
-.code pre { margin: 0; max-height: 22rem; overflow: auto; }
+.code pre { margin: 0.5rem 0 0; max-height: 22rem; overflow: auto; }
+
+.source { margin: 0 0 0.75rem; font-size: 0.85rem; }
+.source code { white-space: pre; }
 
 /* ---------- answers ---------- */
 
@@ -297,3 +310,97 @@ h2 {
 }
 
 .muted { color: var(--muted); }
+
+/* ---------- prompt, sent messages, checks ---------- */
+
+#message-input { font-family: var(--pico-font-family-monospace); font-size: 0.9rem; }
+.count { text-align: right; margin: 0.25rem 0 0; }
+.count.over { color: var(--invalid); font-weight: 600; }
+
+.sent-note { margin: 0 0 0.75rem; color: var(--muted); }
+.messages { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.sent {
+  list-style: none;
+  margin: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+}
+.sent.system { border-left: 4px solid var(--ink); }
+.sent.user { border-left: 4px solid var(--accent); }
+.sent-role { margin: 0 0 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.sent pre { margin: 0; max-height: 16rem; overflow: auto; font-size: 0.8rem; white-space: pre-wrap; }
+
+.attempt-head { gap: 0.75rem; }
+.attempt-head .verdict { margin-left: auto; }
+.check {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+}
+.rejected .check { background: var(--invalid-tint); color: var(--invalid); }
+.accepted .check { background: var(--valid-tint); color: var(--valid); }
+.attempt-meta { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.attempt-sentback { margin: 0.4rem 0 0; }
+.attempt-sentback summary { font-size: 0.85rem; color: var(--muted); }
+.attempt-sentback pre { margin: 0.4rem 0 0; font-size: 0.8rem; white-space: pre-wrap; }
+
+.result ol.nested { margin: 0; padding-left: 1.25rem; display: grid; gap: 0.6rem; }
+.result ol.nested > li { padding-left: 0.25rem; }
+.result ol.nested dl { font-size: 0.95rem; }
+
+/* ---------- safeguards, cases, field report, fabrication test ---------- */
+
+:root, :root[data-theme="light"] {
+  --warn: #9a5b00;
+  --warn-tint: #fdf1dc;
+}
+
+
+.safeguards { margin-bottom: 1rem; }
+.check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.4rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.check:has(input:checked) { border-color: var(--accent); }
+.check input { margin: 0.2rem 0 0; }
+.check b { font-weight: 500; display: block; }
+.check small { color: var(--muted); line-height: 1.35; display: block; }
+
+.chip {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  margin: 0.1rem 0.25rem 0.1rem 0;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--paper);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip.good { background: var(--valid-tint); color: var(--valid); }
+.chip.bad { background: var(--invalid-tint); color: var(--invalid); }
+.chip.warn { background: var(--warn-tint); color: var(--warn); }
+
+.result.partial { border-color: var(--warn); background: var(--warn-tint); }
+.partial .result-title { color: var(--warn); }
+
+.table-wrap { overflow-x: auto; }
+.field-report { margin-top: 1rem; }
+.field-report h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.field-report table { background: var(--panel); border: 1px solid var(--line); font-size: 0.9rem; }
+.field-report td, .field-report th { padding: 0.45rem 0.7rem; vertical-align: top; }
+.field-report td.quote { font-style: italic; }
+
+.attempt.crosscheck { border-left-color: var(--accent); }
+

@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 /**
  * A wire format the model writes in. Decoding is strict: unknown keys, missing required
  * fields, wrong types, and invalid enum values all fail. That strictness *is* the validation.
+ * JSON also goes through [StrictJson] first, which closes the gaps kotlinx leaves and reports every problem.
  */
 sealed interface OutputFormat {
     val displayName: String
@@ -14,8 +15,11 @@ sealed interface OutputFormat {
 
     data object JSON : OutputFormat {
         override val displayName = "JSON"
-        override fun <T> decode(serializer: KSerializer<T>, text: String): T =
-            Json.decodeFromString(serializer, stripFences(text))
+        override fun <T> decode(serializer: KSerializer<T>, text: String): T {
+            val clean = stripFences(text)
+            StrictJson.check(serializer.descriptor, StrictJson.parse(clean))
+            return Json.decodeFromString(serializer, clean)
+        }
     }
 
     data object YAML : OutputFormat {
