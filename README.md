@@ -6,7 +6,6 @@ application library and a discoverable MCP validation server.
 | Approach | Folder | Documentation |
 | --- | --- | --- |
 | Kotlin wrapper library and demo UI | `kotlin-library/` | [Kotlin setup](kotlin-library/README.md) |
-| Python MCP server and presentation demo | `mcp-server/` | [MCP setup](mcp-server/README.md) |
 
 The approaches have separate source code, tests, build configuration, and demos.
 
