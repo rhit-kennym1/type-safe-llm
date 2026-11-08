@@ -12,9 +12,8 @@ application library.
 | Document | Covers |
 | --- | --- |
 | [Design document v2](background-information/design-document-v2.md) | Current design, results, open questions |
-| [Architecture](background-information/architecture.md) | Diagrams of both approaches |
+| [Architecture](background-information/architecture.md) | Diagram of the library |
 | [Design decisions](background-information/design-decisions.md) | Why each choice was made |
-| [Market landscape](background-information/market-landscape.md) | Existing tools and what MCP provides natively |
-| [Deliverables audit](background-information/deliverables-audit.md) | Status of every commitment, by track |
+| [Market landscape](background-information/market-landscape.md) | Existing tools |
 
-The original design document and architecture spike are kept in the same folder.
+| [Deliverables audit](background-information/deliverables-audit.md) | Status of every commitment, by track |
