@@ -15,5 +15,4 @@ application library.
 | [Architecture](background-information/architecture.md) | Diagram of the library |
 | [Design decisions](background-information/design-decisions.md) | Why each choice was made |
 | [Market landscape](background-information/market-landscape.md) | Existing tools |
-
 | [Deliverables audit](background-information/deliverables-audit.md) | Status of every commitment, by track |
