@@ -1,0 +1,9 @@
+# Python package configuration.
+#
+# Add:
+# - project metadata
+# - Python version
+# - dependencies
+# - test configuration
+# - lint/format configuration
+# - package discovery
