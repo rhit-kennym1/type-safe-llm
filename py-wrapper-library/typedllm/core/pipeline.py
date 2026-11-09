@@ -1,4 +1,4 @@
-"""Main orchestration pipeline for type-safe JSON generation."""
+"""Main orchestration pipeline for type-safe structured generation."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ from time import perf_counter
 from typing import Any
 
 from ..errors import OutputParsingError, TypedOutputError
+from ..formats import get_format
 from ..models.attempt import Attempt
 from ..models.request import GenerateRequest
 from ..models.result import GenerateResult
 from ..providers.base import Message, Provider
-from .parsing import parse_json
 from .prompts import correction_prompt, structured_output_prompt
 from .retry import decide_retry
 from .schema import validate_schema
@@ -25,11 +25,15 @@ class GenerationPipeline:
 
     async def run(self, request: GenerateRequest) -> GenerateResult:
         validate_schema(request.schema)
+        output_format = get_format(request.config.output_format)
 
         messages: list[Message] = [
             Message(
                 role="system",
-                content=structured_output_prompt(request.schema),
+                content=structured_output_prompt(
+                    request.schema,
+                    output_format=output_format.name,
+                ),
             ),
             Message(
                 role="user",
@@ -38,20 +42,21 @@ class GenerationPipeline:
         ]
 
         attempts: list[Attempt] = []
+        provider_schema = output_format.provider_schema(request.schema)
 
         for attempt_number in range(1, request.config.max_attempts + 1):
             started = perf_counter()
 
             response = await self._provider.complete(
                 messages,
-                response_schema=request.schema,
+                response_schema=provider_schema,
             )
 
             parsed: Any | None = None
             errors: tuple[str, ...]
 
             try:
-                parsed = parse_json(
+                parsed = output_format.parse(
                     response.text,
                     allow_markdown_fences=request.config.allow_markdown_fences,
                 )
@@ -97,7 +102,10 @@ class GenerationPipeline:
                     Message(role="assistant", content=response.text),
                     Message(
                         role="user",
-                        content=correction_prompt(errors),
+                        content=correction_prompt(
+                            errors,
+                            output_format=output_format.name,
+                        ),
                     ),
                 ]
             )

@@ -1,9 +1,7 @@
 """Ollama provider adapter.
 
-Connects the generic Type-Safe LLM provider interface to a local
-or remotely hosted Ollama server.
-
-The user chooses the model and owns/runs the Ollama instance.
+The user owns the Ollama installation, chooses the model, and may point this
+adapter at a local or remote Ollama-compatible server.
 """
 
 from __future__ import annotations
@@ -18,20 +16,7 @@ from .base import Message, ProviderResponse
 
 
 class OllamaProvider:
-    """Provider adapter for Ollama.
-
-    Example:
-        provider = OllamaProvider(
-            model="llama3.2",
-        )
-
-    A custom Ollama server can also be used:
-
-        provider = OllamaProvider(
-            model="llama3.2",
-            host="http://localhost:11434",
-        )
-    """
+    """Provider adapter for Ollama."""
 
     def __init__(
         self,
@@ -39,6 +24,7 @@ class OllamaProvider:
         *,
         host: str = "http://localhost:11434",
         options: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> None:
         if not model.strip():
             raise ValueError("model must not be empty")
@@ -49,7 +35,10 @@ class OllamaProvider:
         self.model = model
         self.host = host
         self.options = dict(options or {})
-        self._client = AsyncClient(host=host)
+        self._client = AsyncClient(
+            host=host,
+            headers=dict(headers or {}),
+        )
 
     async def complete(
         self,
@@ -59,28 +48,20 @@ class OllamaProvider:
     ) -> ProviderResponse:
         """Send one completion request to Ollama.
 
-        If a JSON Schema is supplied, it is passed to Ollama's native
-        structured-output ``format`` parameter.
-
-        The Type-Safe LLM core still validates the returned response
-        independently after the provider call.
-
-        Ollama SDK, connection, and response-conversion failures are wrapped in
-        :class:`ProviderError` so callers do not need to depend on Ollama's
-        exception types.
+        For JSON generation, ``response_schema`` is passed through Ollama's
+        native ``format`` parameter. The Type-Safe LLM core still parses and
+        validates the returned value independently.
         """
-
-        ollama_messages = [
-            {
-                "role": message.role,
-                "content": message.content,
-            }
-            for message in messages
-        ]
 
         request: dict[str, Any] = {
             "model": self.model,
-            "messages": ollama_messages,
+            "messages": [
+                {
+                    "role": message.role,
+                    "content": message.content,
+                }
+                for message in messages
+            ],
             "stream": False,
         }
 
@@ -105,4 +86,27 @@ class OllamaProvider:
         except Exception as exc:
             raise ProviderError(
                 f"Ollama request failed for model {self.model!r}: {exc}"
+            ) from exc
+
+    async def list_models(self) -> tuple[str, ...]:
+        """Return model names available from the configured Ollama server.
+
+        This is an optional provider-specific convenience method intended for
+        future UI/model-selection workflows. It is not part of the base
+        Provider protocol.
+        """
+
+        try:
+            response = await self._client.list()
+
+            names = {
+                model.model
+                for model in response.models
+                if getattr(model, "model", None)
+            }
+
+            return tuple(sorted(names))
+        except Exception as exc:
+            raise ProviderError(
+                f"Could not list Ollama models from {self.host!r}: {exc}"
             ) from exc
