@@ -1,10 +1,98 @@
+# ----------------------------
+# Python
+# ----------------------------
+
 __pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.env
-dist/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
 build/
+dist/
 *.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# ----------------------------
+# Environments
+# ----------------------------
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+!.env.example
+
+# API keys, etc.
+*.key
+*.pem
+
+# ----------------------------
+# Testing
+# ----------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# ----------------------------
+# Type checking / linting
+# ----------------------------
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# ----------------------------
+# IDEs / editors
+# ----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----------------------------
+# Operating system files
+# ----------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----------------------------
+# Logs
+# ----------------------------
+*.log
+logs/
+
+# ----------------------------
+# Local model / provider data
+# ----------------------------
+credentials/
+secrets/
+local_config.json
+
+# ----------------------------
+# Experiment / evaluation output
+# ----------------------------
+results/
+reports/generated/
+evaluation_output/
+benchmark_output/
+*.results.json
+*.results.csv
+
+# ----------------------------
+# Demo / UI generated files
+# ----------------------------
+demo_ui/.cache/
+ui/.cache/
+
+# ----------------------------
+# Temporary files
+# ----------------------------
+tmp/
+temp/
+*.tmp
+*.bak

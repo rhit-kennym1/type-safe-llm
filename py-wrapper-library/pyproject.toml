@@ -1,9 +1,44 @@
-# Python package configuration.
-#
-# Add:
-# - project metadata
-# - Python version
-# - dependencies
-# - test configuration
-# - lint/format configuration
-# - package discovery
+[build-system]
+requires = [
+    "setuptools>=75",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "typedllm"
+version = "0.1.0"
+description = "Type-safe structured output and validation for LLMs"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "jsonschema>=4.26.0,<5.0",
+]
+
+
+[project.optional-dependencies]
+
+# Ollama provider support
+ollama = [
+    "ollama>=0.6.3,<0.7",
+]
+
+# Development and testing tools
+dev = [
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.24,<2.0",
+]
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["typedllm*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+addopts = "-ra"
