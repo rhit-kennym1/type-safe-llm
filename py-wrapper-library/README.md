@@ -10,13 +10,13 @@ Main flow:
             v
       Core Pipeline
     /      |       \
-Prompt   Provider   Validation
+    Prompt   Provider   Validation
           |
           v
       Raw LLM Output
           |
           v
-   Parse -> Validate
+       Parse -> Validate
           |
     Valid? / \ Invalid?
           |     |
