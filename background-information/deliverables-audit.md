@@ -65,7 +65,7 @@ Raised but not on the agreed list:
 | An MCP server written in Kotlin over the library | ❌ discussed in [D11](design-decisions.md#d11), not built |
 | Why Pydantic, not Kotlin, for MCP; doesn't MCP already type-check? | ✅ [D11](design-decisions.md#d11), [market-landscape.md](market-landscape.md#what-mcp-provides-natively) |
 
-## 4. What's left, in priority order
+## 4. Remaining work
 
 1. **Live runs** on Ollama and Gemini, all three tracks, three repeats. Fills report §4 and answers how often real
    models make each mistake. Needs a machine with Ollama or a Gemini key (the build environment has neither).

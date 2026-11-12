@@ -1,9 +1,5 @@
-.gradle/
-build/
-.idea/
-*.iml
-.kotlin/
-local.properties
-.env
-dist/
-bin/
+﻿.venv/
+__pycache__/
+*.pyc
+
+

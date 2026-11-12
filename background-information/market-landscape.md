@@ -54,7 +54,7 @@ worst case: the schema looks enforced but isn't. This is why the library validat
 | **This project: library** | Kotlin | `@Serializable` class, `@Description` | Strict decode plus `init`-block rules | Yes, resends with the error | Rules not advertised to the model ([D5](design-decisions.md#d5)) |
 | **This project: MCP server** | Python, any MCP host | Named Pydantic schemas | Pydantic strict mode, every error reported | Host-driven | Fixed schema catalog ([D13](design-decisions.md#d13)) |
 
-### Koog, honestly
+### Koog comparison
 
 Koog overlaps with the wrapper library almost feature for feature: same serialization library, same descriptor-based
 schema generation, sealed classes, recursion, field descriptions, native vs. prompt-only modes, retries.
@@ -102,7 +102,7 @@ So:
   declares an `outputSchema` that reaches clients. Our server is in the minority: FastMCP generates `outputSchema`
   from `validate_output`'s return type, so its results are typed.
 
-### Where the MCP track adds value
+### What the MCP track contributes
 
 - A validator any MCP host can discover and call, in any language, including hosts that aren't JVM.
 - Pydantic's detailed, all-errors reports, which the report shows are shorter and more complete than the Kotlin

@@ -17,7 +17,7 @@ Organizations use LLMs to pull structured data out of unstructured text: contrac
 Models return text. Developers then parse it, check it and convert it into their application's types, and they
 rewrite that code for every application. Missing fields, wrong types and malformed output cause failures downstream.
 
-## 2. The guarantee
+## 2. Project goal
 
 > A caller asks for a result of type `T` and gets either a fully validated `T` or an explicit, typed failure. Never
 > a partially filled object, an unchecked cast, or a raw string to parse.
@@ -57,7 +57,7 @@ val event: Event = llm.call<Event>("Extract the event from: $email")
 prompt. The host gets the prompt, calls its model, sends the answer to `validate_output`, and retries with the
 errors. In tool-calling mode the model calls `validate_output` itself, so the host must re-check the final answer.
 
-## 4. What's built
+## 4. Current implementation
 
 Full status: [deliverables-audit.md](deliverables-audit.md). Highlights since week 5:
 
