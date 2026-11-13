@@ -1,4 +1,4 @@
-6.4.2 Stakeholder Needs and Requirements Definition process
+# 6.4.2 Stakeholder Needs and Requirements Definition process
 1. Prepare for Stakeholder Needs and Requirements Definition
 a. Identify the stakeholders who have an interest in the software system throughout its lifecycle.
 Outcome: a
@@ -164,3 +164,174 @@ XP implementation: XP keeps very few permanent artifacts: the code and the tests
 Supporting quote(s):
 
 “There is only one code stream.” Chapter 9
+
+# 6.4.4
+
+# 6.4.5 Design Definition process
+1. Prepare for software system design definition
+
+a. Define the design definition strategy.
+
+Outcome: f
+
+XP implementation: XP does not try to completely design the system before implementation begins. The design develops incrementally as stories are selected and implemented. The Weekly Cycle gives the team a short planning horizon, while the design is refined as the team learns more about the system.
+
+Supporting quote(s):
+
+“Plan work a week at a time.” Chapter 7
+
+b. Select and prioritize design principles and design characteristics.
+
+Outcome: a
+
+XP implementation: XP emphasizes keeping the design simple and maintaining quality while the system changes. Design choices should support the current stories rather than trying to predict every future requirement. The team can refactor the design later when new requirements make a change necessary.
+
+Supporting quote(s):
+
+“No fixed direction remains valid for long.” Chapter 4
+
+c. Identify and plan for the systems or services needed to support design.
+
+Outcome: g
+
+XP implementation: XP depends on development tools that allow the team to design and test continuously, such as the shared repository, automated tests, build system, development environment, and collaboration tools. These are prepared so programmers can design, implement, and test changes throughout each iteration.
+
+Supporting quote(s):
+
+“Automatically build the whole system and run all of the tests in ten minutes.” Chapter 7
+
+d. Obtain access to the systems or services needed for design.
+
+Outcome: g
+
+XP implementation: The team needs access to the shared code base, build tools, testing tools, development environments, and other resources before doing the work. XP's Single Code Base practice also makes sure the team works from one shared version of the software instead of separate disconnected copies.
+
+Supporting quote(s):
+
+“There is only one code stream.” Chapter 9
+
+2. Establish designs for each software system element
+
+a. Turn architectural and design characteristics into designs for individual software elements.
+
+Outcome: b
+
+XP implementation: XP turns larger requirements into small stories and then implements the design needed for those stories. Instead of fully specifying every component beforehand, programmers design the pieces needed for the current story and continuously improve how those pieces fit together.
+
+Supporting quote(s):
+
+“Plan using units of customer-visible functionality.” Chapter 7
+
+b. Define or obtain the necessary design enablers.
+
+Outcome: c
+
+XP implementation: XP uses tools such as tests, coding conventions, stories, design patterns, and simple diagrams when they help the team implement the software. Automated tests are especially important because they give programmers feedback while the design changes.
+
+Supporting quote(s):
+
+“Write a failing automated test before changing any code.” Chapter 7
+
+c. Examine design alternatives and determine whether they are practical to implement.
+
+Outcome: e
+
+XP implementation: XP encourages developers to try simple solutions and learn from implementation rather than deciding every technical detail in advance. If an approach becomes difficult or does not work well, the team can change the design through refactoring and choose a better solution.
+
+Supporting quote(s):
+
+“No fixed direction remains valid for long.” Chapter 4
+
+d. Refine the interfaces between software elements and external systems.
+
+Outcome: d
+
+XP implementation: Interfaces are refined while stories are implemented and components begin interacting with each other. Continuous communication between team members helps developers recognize when an interface is confusing or difficult to use and change it before more code depends on it.
+
+Supporting quote(s):
+
+“Communication is important for creating a sense of team and effective cooperation.” Chapter 4
+
+e. Establish the design artifacts.
+
+Outcome: f
+
+XP implementation: XP tries to avoid creating documentation that will quickly become outdated. The most important permanent design artifacts are the working code and automated tests. Other diagrams or design documents can still be created when they are useful, but XP prefers artifacts that remain connected to the actual implementation.
+
+Supporting quote(s):
+
+“Maintain only the code and the tests as permanent artifacts.” Chapter 9
+
+3. Assess alternatives for obtaining software system elements
+
+a. Determine the technologies required for each software element.
+
+Outcome: c
+
+XP implementation: Technology choices are made based on what is needed to implement the current requirements. The team can investigate libraries, frameworks, languages, providers, or tools and select technologies that allow the stories to be implemented while maintaining quality.
+
+Supporting quote(s):
+
+“Sacrificing quality is not effective as a means of control.” Chapter 5
+
+b. Identify possible alternatives for software system elements.
+
+Outcome: e
+
+XP implementation: The team can consider building something themselves, reusing existing code, using an open-source library, or using an external service. XP does not require every technical decision to be fixed at the beginning, so alternatives can be investigated as the relevant story approaches implementation.
+
+Supporting quote(s):
+
+“No fixed direction remains valid for long.” Chapter 4
+
+c. Evaluate the candidate alternatives against the required characteristics.
+
+Outcome: e
+
+XP implementation: XP favors getting feedback from working software. Candidate solutions can be tested through small implementations, automated tests, or prototypes instead of selecting an option only from documentation. The team can compare whether each alternative actually satisfies the required behavior and quality.
+
+Supporting quote(s):
+
+“Write a failing automated test before changing any code.” Chapter 7
+
+d. Choose the preferred design alternative.
+
+Outcome: e
+
+XP implementation: After trying or evaluating the alternatives, the team chooses the option that best supports the current requirements while keeping the design simple and maintainable. The decision does not have to be permanent because XP allows the design to evolve when new information becomes available.
+
+Supporting quote(s):
+
+“No fixed direction remains valid for long.” Chapter 4
+
+4. Manage the design
+
+a. Capture the design and the reasoning behind important decisions.
+
+Outcome: f
+
+XP implementation: XP captures most of the detailed design directly in the code and tests rather than creating large design documents. Important decisions can still be recorded when the reasoning will be useful to the team, but documentation should support the software instead of becoming a separate version of the design.
+
+Supporting quote(s):
+
+“Maintain only the code and the tests as permanent artifacts.” Chapter 9
+
+b. Maintain traceability between the detailed design, requirements, and architecture.
+
+Outcome: h
+
+XP implementation: Stories describe the requirements, tests verify those stories, and the code implements the behavior checked by the tests. Keeping all of these in a single code base gives the team a practical form of traceability. If more formal traceability is needed, story IDs can also be connected to tests, commits, or pull requests.
+
+Supporting quote(s):
+
+“There is only one code stream.” Chapter 9
+
+c. Determine the current status of the software design.
+
+Outcome: a
+
+XP implementation: XP measures the state of the design continuously rather than waiting for a formal design review. Automated tests, continuous integration, and working software show whether the current design still supports the requirements. When tests fail or the design becomes difficult to change, the team can refactor it.
+
+Supporting quote(s):
+
+“Automatically build the whole system and run all of the tests in ten minutes.” Chapter 7
