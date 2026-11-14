@@ -165,7 +165,278 @@ Supporting quote(s):
 
 “There is only one code stream.” Chapter 9
 
-# 6.4.4
+# 6.4.4 Architecture Definition process
+1. Prepare for architecture definition
+
+a. Define the architecture definition strategy.
+
+Outcome: g
+
+XP implementation: XP does not have a separate architecture phase. The team starts with just enough architecture to get going and keeps improving it a little every week as stories are implemented. This means the strategy is the same for every project: design a little each day, learn from the working system, and adjust.
+
+Supporting quote(s):
+
+“Invest in the design of the system every day.” Chapter 7
+
+b. Identify and plan for the systems or services needed to support architecture definition.
+
+Outcome: d
+
+XP implementation: The enabling tools for XP are simple: a shared repository, automated tests, an automated build, and a space where the team can sketch and discuss ideas together. Diagrams and models are drawn when they help, but the build and the tests are the main tools that tell the team whether the architecture still works.
+
+Supporting quote(s):
+
+“Automatically build the whole system and run all of the tests in ten minutes.” Chapter 7
+
+c. Obtain or acquire access to the enabling systems or services to be used.
+
+Outcome: d
+
+XP implementation: Shared Code means any team member can use and change any part of the system, so access to the code, the build, and the diagrams is open to the whole team. Nobody has to ask a separate architecture group for permission to look at or improve the design.
+
+Supporting quote(s):
+
+“Anyone on the team can improve any part of the system at any time.” Chapter 9
+
+2. Develop architecture viewpoints
+
+a. Identify the stakeholder concerns that the architecture must address.
+
+Outcome: a
+
+XP implementation: Stakeholder concerns come from the Whole Team. Real Customer Involvement and the interaction designers keep the concerns of users and customers in front of the programmers during planning, instead of collecting them once in a document. New concerns are picked up as stories whenever they appear.
+
+Supporting quote(s):
+
+“Addressing the concerns of eventual users is a priority for the team.” Chapter 10
+
+b. Define the architecture viewpoints that will be used to express those concerns.
+
+Outcome: b
+
+XP implementation: XP does not define formal viewpoints. The closest practice is the overall metaphor, which gives the team a shared way of describing how the system fits together. This is a place where we tailor the standard lightly by drawing a few simple diagrams, such as an overview and the module structure, to cover the concerns that matter most to our client.
+
+Supporting quote(s):
+
+“Interaction designers on an XP team choose overall metaphors for the system” Chapter 10
+
+3. Develop models and views of candidate architectures
+
+a. Define the system context, boundaries, and external interfaces.
+
+Outcome: c
+
+XP implementation: Stories describe what users and other systems do with the software, so the context and boundary show up as the stories are written and planned. The customer on the team tells the programmers what is outside the system and what the system has to talk to.
+
+Supporting quote(s):
+
+“Plan using units of customer-visible functionality.” Chapter 7
+
+b. Identify the architectural entities and the relationships between them.
+
+Outcome: f
+
+XP implementation: Entities and relationships are found while implementing stories. The team makes the design an excellent fit for what the system needs now, and improves how the parts relate as it learns more. Eliminating duplication is the simple guide for finding where one part should become two or two should become one.
+
+Supporting quote(s):
+
+“Strive to make the design of the system an excellent fit for the needs of the system that day.” Chapter 7
+
+c. Allocate concepts, properties, behaviors, and constraints that matter to the architecture to the architectural entities.
+
+Outcome: e
+
+XP implementation: In XP the allocation happens as each story is implemented. Programmers decide which part of the system takes on a behavior, and automated tests record the decision. When the same logic ends up in two places, the team moves it so there is only one copy.
+
+Supporting quote(s):
+
+“The simple heuristic I have found helpful is to eliminate duplication.” Chapter 7
+
+d. Select, adapt, or define models of the candidate architectures.
+
+Outcome: d
+
+XP implementation: XP prefers small, working models over large documents. A model can be a sketch on a whiteboard or a small spike of working code. The team expects to change these models because directions chosen too early are the most likely to be wrong.
+
+Supporting quote(s):
+
+“Directions set in advance of experience have an especially short half-life.” Chapter 4
+
+e. Compose views from the models to show how the architecture addresses stakeholder concerns and meets the requirements.
+
+Outcome: d
+
+XP implementation: XP keeps few permanent documents, and the views are generated from or kept close to the code and tests. When a view helps a stakeholder understand the system, the team can draw it, but the working code stays the source of truth.
+
+Supporting quote(s):
+
+“Generate other documents from the code and tests.” Chapter 9
+
+f. Harmonize the models and views of the architecture with each other.
+
+Outcome: d
+
+XP implementation: Because the code and tests are the main artifacts, and everyone works from one shared code base, the models and views cannot drift far apart. Continuous integration shows quickly when one part of the design no longer fits with another.
+
+Supporting quote(s):
+
+“There is only one code stream.” Chapter 9
+
+4. Relate the architecture to design
+
+a. Identify the system elements that relate to the architectural entities and the nature of these relationships.
+
+Outcome: f
+
+XP implementation: System elements are chosen as the stories are implemented and are reshaped by refactoring as the team learns. XP does not require the full list of elements up front, only enough design to support the stories being built.
+
+Supporting quote(s):
+
+“The question is not whether or not to design, the question is when to design.” Chapter 7
+
+b. Define the interfaces and interactions among the system elements and with external entities.
+
+Outcome: f
+
+XP implementation: Interfaces are defined by writing tests first. A test shows how a piece of the system is meant to be called, so the interface is designed from the point of view of the code that uses it. Pairing and open communication help the team notice a confusing interface before much code depends on it.
+
+Supporting quote(s):
+
+“Write a failing automated test before changing any code.” Chapter 7
+
+c. Partition, align, and allocate requirements to the architectural entities and system elements.
+
+Outcome: e
+
+XP implementation: Large requirements are split into stories, and each week the customer picks the stories to work on. Each story is then allocated to the parts of the system it touches, which keeps the link between requirements and architecture short and easy to follow.
+
+Supporting quote(s):
+
+“Plan work a week at a time.” Chapter 7
+
+d. Map software elements to hardware elements.
+
+Outcome: f
+
+XP implementation: XP says very little about this task. The team works out where the software will run when it matters to a story, and the deployment choices can change as the team learns. For our project, this is a place where we tailor lightly by deciding the hosting setup as the client's needs become clear.
+
+Supporting quote(s):
+
+“No fixed direction remains valid for long; whether we are talking about the details of software development, the requirements of the system, or the architecture of the system.” Chapter 4
+
+e. Define the architecture characteristics and enablers that the design needs to follow.
+
+Outcome: e
+
+XP implementation: XP treats quality as a fixed characteristic that the team does not trade away. The team keeps the design simple, well tested, and easy to change, and uses those as the principles that guide every design decision.
+
+Supporting quote(s):
+
+“Sacrificing quality is not effective as a means of control.” Chapter 5
+
+5. Assess architecture candidates
+
+a. Assess each candidate architecture against the requirements and the stakeholder concerns.
+
+Outcome: g
+
+XP implementation: XP assesses candidates by trying them. The team builds a small working version, runs tests on it, and shows it to the customer, instead of deciding from documents alone. This gives real feedback on whether a candidate meets the requirements.
+
+Supporting quote(s):
+
+“Incremental design suggests that the most effective time to design is in the light of experience.” Chapter 7
+
+b. Select the preferred architecture and capture the key decisions and rationale.
+
+Outcome: g
+
+XP implementation: The team and customer choose the option that best supports the current stories and keeps the design simple. XP keeps most of the history of these decisions in conversation instead of long documents. This is a gap compared to the standard, so we tailor it by recording our main decisions and the reasons for them in a short design decisions file.
+
+Supporting quote(s):
+
+“Rely on social mechanisms to keep alive important history of the project.” Chapter 9
+
+c. Establish the architecture baseline of the selected architecture.
+
+Outcome: i
+
+XP implementation: The baseline is whatever is in the single code base with all of the tests passing. Because the team integrates often, the baseline is always current and is not a separate document that needs to be updated.
+
+Supporting quote(s):
+
+“There is only one code stream.” Chapter 9
+
+6. Manage the selected architecture
+
+a. Formalize the architecture governance approach and obtain stakeholder agreement.
+
+Outcome: h
+
+XP implementation: In XP, governance comes from shared ownership of the code, pair programming, automated tests, and the planning meetings. Every team member can improve the design, and the tests and the customer's review keep changes from breaking what has already been agreed.
+
+Supporting quote(s):
+
+“Anyone on the team can improve any part of the system at any time.” Chapter 9
+
+b. Obtain explicit acceptance of the architecture by stakeholders.
+
+Outcome: h
+
+XP implementation: Because the customer is part of the team, acceptance is not a single sign-off at the end. The customer sees working software every week and agrees to the direction through the weekly and quarterly planning, so the architecture is accepted a piece at a time.
+
+Supporting quote(s):
+
+“Make people whose lives and business are affected by your system part of the team.” Chapter 9
+
+c. Maintain the concordance and completeness of the architectural entities and their characteristics.
+
+Outcome: h
+
+XP implementation: The team keeps the architecture consistent by improving the design every day and running all of the tests. XP warns that without that daily attention the system becomes hard to change, so keeping the design in step with the code is part of normal work.
+
+Supporting quote(s):
+
+“Without daily attention to design, the cost of changes does skyrocket.” Chapter 7
+
+d. Organize, assess, and control the evolution of the models and views.
+
+Outcome: h
+
+XP implementation: XP expects the models to evolve with the system. The team controls that change by keeping the design investment in proportion to what the system needs so far, refactoring in small steps, and relying on tests to show that a change did not break anything.
+
+Supporting quote(s):
+
+“The advice to XP teams is not to minimize design investment over the short run, but to keep the design investment in proportion to the needs of the system so far.” Chapter 7
+
+e. Maintain the architecture definition and evaluation strategy.
+
+Outcome: g
+
+XP implementation: Once a quarter the team looks back at the project, its progress, and how it fits the larger goals, and adjusts how it designs and evaluates the architecture. Weekly cycles give smaller chances to correct the approach.
+
+Supporting quote(s):
+
+“Plan work a quarter at a time.” Chapter 7
+
+f. Maintain traceability of the architecture.
+
+Outcome: i
+
+XP implementation: Stories describe the requirements, tests check them, and the code implements the behavior, all in one place. XP does not keep a formal traceability matrix. If more is needed, the team can link story names to tests, commits, and the design decisions file.
+
+Supporting quote(s):
+
+“Maintain only the code and the tests as permanent artifacts.” Chapter 9
+
+g. Provide key artifacts and information items that have been selected for baselines.
+
+Outcome: i
+
+XP implementation: The key artifacts are the working code and the automated tests. The automated build and tests show at any time that the baseline still works, and any additional diagrams or documents are kept only when they help.
+
+Supporting quote(s):
+
+“Automatically build the whole system and run all of the tests in ten minutes.” Chapter 7
 
 # 6.4.5 Design Definition process
 1. Prepare for software system design definition
